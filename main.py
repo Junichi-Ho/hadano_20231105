@@ -4,7 +4,7 @@ import pandas as pd
 from PIL import Image
 
 # CSVファイルの読み込み
-csvfile = ".\\20231104_HatanoScore.csv"
+csvfile = "20231104_HatanoScore.csv"
 
 # Index ＝ Dateに。Dateは時間をとりたいがわからない。
 df = pd.read_csv(csvfile)
