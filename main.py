@@ -2,6 +2,7 @@ import streamlit as st
 import numpy as np
 import pandas as pd
 from PIL import Image
+import matplotlib.pyplot as plt
 
 # CSVファイルの読み込み
 csvfile = "20231104_HatanoScore.csv"
@@ -18,8 +19,13 @@ df = df.set_index("Date")
 # サイドバー表示
 #　sidebarを加える
 
+#最近のスコア表示
+if st.sidebar.checkbox("最近のスコア表示"):
+    df3 = df[['Score','OB',"Out","In"]]
+    st.sidebar.write(df3)
+
 #イン アウト選択により絞り込む （前中後にしたいが）
-y = st.sidebar.radio("",("Out","In"))
+y = st.sidebar.radio("Out / In",("Out","In"), horizontal=True)
 if y == "Out" :
     hole = st.sidebar.selectbox(
     "Hole",[1,2,3,4,5,6,7,8,9]
@@ -35,10 +41,7 @@ else:
 #)
 #st.sidebar.write("あなたが選んだのは",option,"月")
 
-#最近のスコア表示
-if st.sidebar.checkbox("最近のスコア表示"):
-    df3 = df[['Score','OB',"Out","In"]]
-    st.sidebar.write(df3)
+
 
 ###
 ###ここから
@@ -76,15 +79,12 @@ else:
 df_hole = df[[str(hole),Teeing,T_result,GIR,GIR_result,Haz,PP,SN,PN,"Year","Month"]]
 #年でFilterするオプション
 year_list = list(df_hole["Year"].unique())
+default_list = ["23","22"]
 #Streamlitのマルチセレクト
-select_year = st.sidebar.multiselect("年でFilterling",year_list,default=year_list)
+select_year = st.sidebar.multiselect("年でFilterling",year_list,default=default_list)
 df_holef = df_hole[(df_hole["Year"].isin(select_year))]
 
-#月でFilterするオプション
-month_list = list(df_hole["Month"].unique())
-#Streamlitのマルチセレクト
-select_month = st.sidebar.multiselect("月でFilterling",month_list,default=month_list)
-df_holef = df_holef[(df_holef["Month"].isin(select_month))]
+
 
 #Ｇｒｅｅｎの画像表示
 im = "./pict/HN"+("0"+str(hole))[-2:]+".png"
@@ -99,41 +99,52 @@ PP_list = list(df_hole[PP].unique())
 select_PP = st.sidebar.multiselect("Pin PositionでFilterling",PP_list,default=PP_list)
 df_holef = df_holef[(df_holef[PP].isin(select_PP))]
 
+#月でFilterするオプション
+month_list = list(df_hole["Month"].unique())
+#Streamlitのマルチセレクト
+select_month = st.sidebar.multiselect("月でFilterling",month_list,default=month_list)
+df_holef = df_holef[(df_holef["Month"].isin(select_month))]
 
-col1,col2,col3=st.columns((1,1,1))
 ##メトリック表示
+this_year = 2023 #比較する年を記載する
+#TeeingShotのOB数
+if hole == 17 or hole == 10 or hole == 4 or hole == 7:
+    countTOB=0
+    OBnumbers=0
+    OBnumbers_latest=0
+else:
+    countTOB=df_holef[df_holef[T_result].str.contains("OB", case=False, na=False)]
+    OBnumbers=countTOB.shape[0]
+    OBnumbers_latest=countTOB[countTOB.index.year == this_year].shape[0]
+#2ndShotのOB数
+count2OB=df_holef[df_holef[GIR_result].str.contains("OB", case=False, na=False)]
+#GIRのGreenOnの数 #ParOn率に変更予定
+countGon=df_holef[df_holef[GIR_result].str.contains("GO", case=False, na=False)]
+
+
+st.text("ラウンド数は"+str(df_holef.shape[0]))
+
+st.write("メトリクス")
+col1,col2,col3=st.columns((1,1,1))
+
 with col1:
     st.metric(
-        label="TeeingOB率 Left(未実装)",
-        value="12",
-        delta="0.3"
+        label="TeeingOB数",
+        value=OBnumbers,
+        delta=OBnumbers_latest
     )
-    st.metric(
-        label="2ndOB率 Left(未実装)",
-        value="12",
-        delta="0.3"
-    )
+
 with col2:
     st.metric(
-        label="TeeingOB率 Right(未実装)",
-        value="12",
-        delta="0.3"
-    )
-    st.metric(
-        label="2ndOB率 Right(未実装)",
-        value="12",
-        delta="0.3"
+        label="2ndOB率",
+        value=count2OB.shape[0],
+        delta=count2OB[count2OB.index.year == this_year].shape[0]
     )
 with col3:
     st.metric(
-        label="ParOn率(未実装)",
-        value="12",
-        delta="0.3"
-    )
-    st.metric(
-        label="FWKeep率(未実装)",
-        value="12",
-        delta="0.3"
+        label="GreenOnの数",
+        value=countGon.shape[0],
+        delta=countGon[countGon.index.year == this_year].shape[0]
     )
 
 
@@ -141,14 +152,40 @@ with col3:
 
 
 # スコアの時系列図
+st.write("Score時系列データ")
 df_areac = df_holef[[str(hole),PN]]
-st.area_chart(df_areac)
+st.line_chart(df_areac)
 
-df_holef[[str(hole),Teeing,T_result,GIR,GIR_result,Haz,PP,SN,PN]]
+
 
 #開発用 Index一覧
 #df.columns
 
+#スコアのヒストグラム表示
+st.write("Scoreヒストグラム")
+#グラフ設定 matplotlib
+fig, ax = plt.subplots()
+
+#ヒストグラム
+ax.hist(df_holef[str(hole)],bins=10,)
+
+st.pyplot(fig, use_container_width=True)
+
+
+#データフレーム表示
+st.write("データフレーム")
+df_holef[[PP,str(hole),PN,SN,GIR_result,Haz]]
+
+#ヒストグラム
+st.write("1st Patt 残り歩数 ヒストグラム")
+fig2, ax2 = plt.subplots()
+ax2.hist(df_holef[SN],bins=30,)
+
+st.pyplot(fig2, use_container_width=True)
+
+#データフレーム表示
+st.write("データフレーム詳細")
+df_holef[[str(hole),Teeing,T_result,GIR,GIR_result,Haz,PP,SN,PN]]
 
 
 col1,col2=st.columns((1,1))
