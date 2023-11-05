@@ -87,7 +87,7 @@ select_month = st.sidebar.multiselect("月でFilterling",month_list,default=mont
 df_holef = df_holef[(df_holef["Month"].isin(select_month))]
 
 #Ｇｒｅｅｎの画像表示
-im = ".\\pict\\HN"+("0"+str(hole))[-2:]+".png"
+im = "./pict/HN"+("0"+str(hole))[-2:]+".png"
 #st.sidebar.write(im)
 image = Image.open(im)
 
@@ -154,7 +154,7 @@ df_holef[[str(hole),Teeing,T_result,GIR,GIR_result,Haz,PP,SN,PN]]
 col1,col2=st.columns((1,1))
 with col1:
     #Ｇｒｅｅｎの画像表示
-    tim = ".\\pict\\TG"+("0"+str(hole))[-2:]+".png"
+    tim = "./pict/TG"+("0"+str(hole))[-2:]+".png"
     #st.sidebar.write(im)
     timage = Image.open(tim)
 

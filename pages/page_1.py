@@ -4,6 +4,6 @@ import pandas as pd
 from PIL import Image
 
 
-image = Image.open(".\\pict\\01_1メモ.png")
+image = Image.open("./pict/01_1m.png")
 
 st.image(image, caption="イメージ")
