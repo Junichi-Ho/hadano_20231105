@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from PIL import Image
 import matplotlib.pyplot as plt
+import datetime
 
 # CSVファイルの読み込み
 csvfile = "20231104_HatanoScore.csv"
@@ -13,7 +14,7 @@ df["Date"]=pd.to_datetime(df["Date"], format="mixed")
 
 df["Year"] = df["Date"].apply(lambda x : x.strftime("%y"))
 df["Month"] = df["Date"].apply(lambda x : x.strftime("%m"))
-df = df.set_index("Date")
+#df = df.set_index("Date")
 
 #
 # サイドバー表示
@@ -76,7 +77,7 @@ else:
     PN = "Patt数"
 
 
-df_hole = df[[str(hole),Teeing,T_result,GIR,GIR_result,Haz,PP,SN,PN,"Year","Month"]]
+df_hole = df[[str(hole),Teeing,T_result,GIR,GIR_result,Haz,PP,SN,PN,"Year","Month","Date"]]
 #年でFilterするオプション
 year_list = list(df_hole["Year"].unique())
 default_list = ["23","22"]
@@ -115,7 +116,7 @@ if hole == 17 or hole == 10 or hole == 4 or hole == 7:
 else:
     countTOB=df_holef[df_holef[T_result].str.contains("OB", case=False, na=False)]
     OBnumbers=countTOB.shape[0]
-    OBnumbers_latest=countTOB[countTOB.index.year == this_year].shape[0]
+    OBnumbers_latest=countTOB[countTOB["Year"] == this_year].shape[0]
 #2ndShotのOB数
 count2OB=df_holef[df_holef[GIR_result].str.contains("OB", case=False, na=False)]
 #GIRのGreenOnの数 #ParOn率に変更予定
@@ -138,13 +139,13 @@ with col2:
     st.metric(
         label="2ndOB率",
         value=count2OB.shape[0],
-        delta=count2OB[count2OB.index.year == this_year].shape[0]
+        delta=count2OB[count2OB["Year"] == this_year].shape[0]
     )
 with col3:
     st.metric(
         label="GreenOnの数",
         value=countGon.shape[0],
-        delta=countGon[countGon.index.year == this_year].shape[0]
+        delta=countGon[countGon["Year"] == this_year].shape[0]
     )
 
 
@@ -152,9 +153,9 @@ with col3:
 
 
 # スコアの時系列図
-st.write("Score時系列データ")
-df_areac = df_holef[[str(hole),PN]]
-st.line_chart(df_areac)
+with st.expander("Score時系列データ"):
+    df_areac = df_holef[[str(hole),PN]]
+    st.line_chart(df_areac)
 
 
 
@@ -174,7 +175,22 @@ st.pyplot(fig, use_container_width=True)
 
 #データフレーム表示
 st.write("データフレーム")
-df_holef[[PP,str(hole),PN,SN,GIR_result,Haz]]
+filtercolumns = {PP,T_result,Haz,GIR,GIR_result,SN,PN,str(hole),"Date"}
+FONFON = st.checkbox("Fairway に絞る")
+FONFON = int(FONFON)
+GONGON = st.checkbox("Green On に絞る")
+GONGON = int(GONGON) * 10
+showswitch = GONGON + FONFON
+df_holef_F=df_holef[df_holef[T_result].str.contains("F", case=False, na=False)]
+countGon_F=countGon[countGon[T_result].str.contains("F", case=False, na=False)]
+if showswitch == 11:
+    countGon_F[[PP,T_result,Haz,GIR,GIR_result,SN,PN,str(hole),"Date"]]
+elif showswitch == 10:
+    countGon[[PP,T_result,Haz,GIR,GIR_result,SN,PN,str(hole),"Date"]]
+elif showswitch == 1:
+    df_holef_F[[PP,T_result,Haz,GIR,GIR_result,SN,PN,str(hole),"Date"]]
+else:
+    df_holef[[PP,T_result,Haz,GIR,GIR_result,SN,PN,str(hole),"Date"]]
 
 #ヒストグラム
 st.write("1st Patt 残り歩数 ヒストグラム")
