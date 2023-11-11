@@ -5,6 +5,7 @@ from PIL import Image
 import matplotlib.pyplot as plt
 import datetime
 
+
 # CSVファイルの読み込み
 csvfile = "20231104_HatanoScore.csv"
 
@@ -16,6 +17,8 @@ df["Year"] = df["Date"].apply(lambda x : x.strftime("%y"))
 df["Month"] = df["Date"].apply(lambda x : x.strftime("%m"))
 #df = df.set_index("Date")
 
+
+st.set_page_config(layout="wide")
 #
 # サイドバー表示
 #　sidebarを加える
@@ -163,41 +166,73 @@ with st.expander("Score時系列データ"):
 #df.columns
 
 #スコアのヒストグラム表示
-st.write("Scoreヒストグラム")
-#グラフ設定 matplotlib
-fig, ax = plt.subplots()
+with st.expander("Scoreヒストグラム"):
+    #グラフ設定 matplotlib
+    fig, ax = plt.subplots()
 
-#ヒストグラム
-ax.hist(df_holef[str(hole)],bins=10,)
+    #ヒストグラム
+    ax.hist(df_holef[str(hole)],bins=10,)
 
-st.pyplot(fig, use_container_width=True)
+    st.pyplot(fig, use_container_width=True)
 
 
 #データフレーム表示
-st.write("データフレーム")
+st.write("データフレーム:ラウンド数は"+str(df_holef.shape[0]))
 filtercolumns = {PP,T_result,Haz,GIR,GIR_result,SN,PN,str(hole),"Date"}
-FONFON = st.checkbox("Fairway に絞る")
-FONFON = int(FONFON)
-GONGON = st.checkbox("Green On に絞る")
-GONGON = int(GONGON) * 10
-showswitch = GONGON + FONFON
-df_holef_F=df_holef[df_holef[T_result].str.contains("F", case=False, na=False)]
-countGon_F=countGon[countGon[T_result].str.contains("F", case=False, na=False)]
-if showswitch == 11:
-    countGon_F[[PP,T_result,Haz,GIR,GIR_result,SN,PN,str(hole),"Date"]]
-elif showswitch == 10:
-    countGon[[PP,T_result,Haz,GIR,GIR_result,SN,PN,str(hole),"Date"]]
-elif showswitch == 1:
-    df_holef_F[[PP,T_result,Haz,GIR,GIR_result,SN,PN,str(hole),"Date"]]
-else:
+if hole == 17 or hole == 10 or hole == 4 or hole == 7:
     df_holef[[PP,T_result,Haz,GIR,GIR_result,SN,PN,str(hole),"Date"]]
+else:
+    col1,col2=st.columns((1,1))
+    with col1:
+        FONFON = st.checkbox("Only FW keep")
+    with col2:
+        GONGON = st.checkbox("Only Green On")
+    FONFON = int(FONFON)
+    GONGON = int(GONGON) * 10
+    showswitch = GONGON + FONFON
+    df_holef_F=df_holef[df_holef[T_result].str.contains("F", case=False, na=False)]
+    countGon_F=countGon[countGon[T_result].str.contains("F", case=False, na=False)]
+    if showswitch == 11:
+        countGon_F.shape[0]
+        countGon_F[[PP,T_result,Haz,GIR,GIR_result,SN,PN,str(hole),"Date"]]
+    elif showswitch == 10:
+        countGon.shape[0]
+        countGon[[PP,T_result,Haz,GIR,GIR_result,SN,PN,str(hole),"Date"]]
+    elif showswitch == 1:
+        df_holef_F.shape[0]
+        df_holef_F[[PP,T_result,Haz,GIR,GIR_result,SN,PN,str(hole),"Date"]]
+    else:
+        df_holef[[PP,T_result,Haz,GIR,GIR_result,SN,PN,str(hole),"Date"]]
+
+#df_holef.dtypes
+#df_holeS = df_holef[[PN,SN,str(hole)]]
+#df_holeS
+#st.scatter_chart(data = df_holeS,x=SN,y=PN,color=str(hole))
+#st.bar_chart(df_holeS,x=PN,y=SN)
+
+with st.expander("patt散布図",expanded=True):
+    #グラフ設定 matplotlib
+    fig, ax = plt.subplots()
+
+    #scatter
+    ax.scatter(
+        x=df_holef[SN],
+        y=df_holef[PN],
+        s=df_holef[str(hole)],
+        c=df_holef[PP],
+        alpha=0.8,
+        #vmin=df_holef[str(hole)].min(),
+        #vmax=df_holef[str(hole)].max()
+        )
+
+    st.pyplot(fig, use_container_width=True)
 
 #ヒストグラム
-st.write("1st Patt 残り歩数 ヒストグラム")
-fig2, ax2 = plt.subplots()
-ax2.hist(df_holef[SN],bins=30,)
+with st.expander("1st Patt 残り歩数 ヒストグラム"):
+    fig2, ax2 = plt.subplots()
+    ax2.hist(df_holef[SN],bins=30,)
 
-st.pyplot(fig2, use_container_width=True)
+    st.pyplot(fig2, use_container_width=True)
 
 #データフレーム表示
 st.write("データフレーム詳細")
