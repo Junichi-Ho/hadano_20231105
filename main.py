@@ -17,11 +17,13 @@ df["Year"] = df["Date"].apply(lambda x : x.strftime("%y"))
 df["Month"] = df["Date"].apply(lambda x : x.strftime("%m"))
 #df = df.set_index("Date")
 
-
 st.set_page_config(layout="wide")
+
+
 #
 # サイドバー表示
 #　sidebarを加える
+#
 
 #最近のスコア表示
 if st.sidebar.checkbox("最近のスコア表示"):
@@ -39,27 +41,13 @@ else:
     "Hole",[10,11,12,13,14,15,16,17,18]
     )
 
-#月絞り　未実装
-#option = st.sidebar.selectbox(
-#    "月で絞る(未実装)",[9,10,11,12]
-#)
-#st.sidebar.write("あなたが選んだのは",option,"月")
 
-
-
-###
-###ここから
-###
-bun_title = str(hole) + "番ホールを表示"
-st.caption(bun_title)
-
-
-
-#x = st.slider("x")
-#st.write(x, "xtimes2",2*x)
-
+#多分いらない##########
 filter_hole = str(hole),"Teeing番手","結果","GIR番手","結果.1","Hazard","Pin位置","歩数","Patt数","Patt数.1"
 Hole = str(hole)
+##############
+
+####
 if hole > 1 :
     Teeing = "Teeing番手" + "." + str(hole-1)
     T_result = "結果" + "." + str((hole-1)*2)
@@ -81,14 +69,13 @@ else:
 
 
 df_hole = df[[str(hole),Teeing,T_result,GIR,GIR_result,Haz,PP,SN,PN,"Year","Month","Date"]]
+
 #年でFilterするオプション
 year_list = list(df_hole["Year"].unique())
 default_list = ["23","22"]
 #Streamlitのマルチセレクト
 select_year = st.sidebar.multiselect("年でFilterling",year_list,default=default_list)
 df_holef = df_hole[(df_hole["Year"].isin(select_year))]
-
-
 
 #Ｇｒｅｅｎの画像表示
 im = "./pict/HN"+("0"+str(hole))[-2:]+".png"
@@ -109,6 +96,16 @@ month_list = list(df_hole["Month"].unique())
 select_month = st.sidebar.multiselect("月でFilterling",month_list,default=month_list)
 df_holef = df_holef[(df_holef["Month"].isin(select_month))]
 
+###
+###
+###ここから
+###
+###
+
+
+#x = st.slider("x")
+#st.write(x, "xtimes2",2*x)
+
 ##メトリック表示
 this_year = 2023 #比較する年を記載する
 #TeeingShotのOB数
@@ -126,7 +123,45 @@ count2OB=df_holef[df_holef[GIR_result].str.contains("OB", case=False, na=False)]
 countGon=df_holef[df_holef[GIR_result].str.contains("GO", case=False, na=False)]
 
 
-st.text("ラウンド数は"+str(df_holef.shape[0]))
+
+
+pd.options.display.float_format = '{:.2f}'.format
+bun_title = f"{str(hole)} 番ホール_ラウンド数 {df_holef.shape[0]} 回 "
+st.subheader(bun_title)
+
+if OBnumbers == 0:
+    lastdate = "なし"
+else:
+    lastdate = countTOB.iat[0,11]
+
+
+st.caption(f"最後のOBは、{lastdate}")
+
+#
+#DoubleBoggy以上
+#
+if hole == 17 or hole == 10 or hole == 4 or hole == 7:
+    temp_hole = df_holef[df[str(hole)] > 4 ]
+elif hole == 6 or hole == 8 or hole == 14 or hole == 18:
+    temp_hole = df_holef[df[str(hole)] > 6 ]
+else:
+    temp_hole = df_holef[df[str(hole)] > 5 ]
+if temp_hole.shape[0] == 0:
+    lastdate = "なし"
+else:
+    lastdate = temp_hole.iat[0,11]
+
+st.caption(f"最後のDouble Boggy以上は、{lastdate}")
+
+#
+# ３Patt
+#
+temp_hole = df_holef[df[PN] > 2 ]
+if temp_hole.shape[0] == 0:
+    lastdate = "なし"
+else:
+    lastdate = temp_hole.iat[0,11]
+st.caption(f"最後の3pattは、{lastdate}")
 
 st.write("メトリクス")
 col1,col2,col3=st.columns((1,1,1))
@@ -151,22 +186,18 @@ with col3:
         delta=countGon[countGon["Year"] == this_year].shape[0]
     )
 
-
-
-
+st.write("スコア")
 
 # スコアの時系列図
-with st.expander("Score時系列データ"):
+with st.expander(f"Score時系列データ {df_holef[str(hole)].head(3)} "):
     df_areac = df_holef[[str(hole),PN]]
     st.line_chart(df_areac)
-
-
 
 #開発用 Index一覧
 #df.columns
 
 #スコアのヒストグラム表示
-with st.expander("Scoreヒストグラム"):
+with st.expander(f"Score_ヒストグラム:平均 {df_hole[str(hole)].mean()}"):
     #グラフ設定 matplotlib
     fig, ax = plt.subplots()
 
@@ -177,32 +208,32 @@ with st.expander("Scoreヒストグラム"):
 
 
 #データフレーム表示
-st.write("データフレーム:ラウンド数は"+str(df_holef.shape[0]))
-filtercolumns = {PP,T_result,Haz,GIR,GIR_result,SN,PN,str(hole),"Date"}
-if hole == 17 or hole == 10 or hole == 4 or hole == 7:
-    df_holef[[PP,T_result,Haz,GIR,GIR_result,SN,PN,str(hole),"Date"]]
-else:
-    col1,col2=st.columns((1,1))
-    with col1:
-        FONFON = st.checkbox("Only FW keep")
-    with col2:
-        GONGON = st.checkbox("Only Green On")
-    FONFON = int(FONFON)
-    GONGON = int(GONGON) * 10
-    showswitch = GONGON + FONFON
-    df_holef_F=df_holef[df_holef[T_result].str.contains("F", case=False, na=False)]
-    countGon_F=countGon[countGon[T_result].str.contains("F", case=False, na=False)]
-    if showswitch == 11:
-        countGon_F.shape[0]
-        countGon_F[[PP,T_result,Haz,GIR,GIR_result,SN,PN,str(hole),"Date"]]
-    elif showswitch == 10:
-        countGon.shape[0]
-        countGon[[PP,T_result,Haz,GIR,GIR_result,SN,PN,str(hole),"Date"]]
-    elif showswitch == 1:
-        df_holef_F.shape[0]
-        df_holef_F[[PP,T_result,Haz,GIR,GIR_result,SN,PN,str(hole),"Date"]]
-    else:
+with st.expander(f"データフレーム:ラウンド数は {str(df_holef.shape[0])} 回"):
+    filtercolumns = {PP,T_result,Haz,GIR,GIR_result,SN,PN,str(hole),"Date"}
+    if hole == 17 or hole == 10 or hole == 4 or hole == 7:
         df_holef[[PP,T_result,Haz,GIR,GIR_result,SN,PN,str(hole),"Date"]]
+    else:
+        col1,col2=st.columns((1,1))
+        with col1:
+            FONFON = st.checkbox("Only FW keep")
+        with col2:
+            GONGON = st.checkbox("Only Green On")
+        FONFON = int(FONFON)
+        GONGON = int(GONGON) * 10
+        showswitch = GONGON + FONFON
+        df_holef_F=df_holef[df_holef[T_result].str.contains("F", case=False, na=False)]
+        countGon_F=countGon[countGon[T_result].str.contains("F", case=False, na=False)]
+        if showswitch == 11:
+            countGon_F.shape[0]
+            countGon_F[[PP,T_result,Haz,GIR,GIR_result,SN,PN,str(hole),"Date"]]
+        elif showswitch == 10:
+            countGon.shape[0]
+            countGon[[PP,T_result,Haz,GIR,GIR_result,SN,PN,str(hole),"Date"]]
+        elif showswitch == 1:
+            df_holef_F.shape[0]
+            df_holef_F[[PP,T_result,Haz,GIR,GIR_result,SN,PN,str(hole),"Date"]]
+        else:
+            st.dataframe(df_holef[[PP,T_result,Haz,GIR,GIR_result,SN,PN,str(hole),"Date"]].style.background_gradient(cmap="Greens"),hide_index=True)
 
 #df_holef.dtypes
 #df_holeS = df_holef[[PN,SN,str(hole)]]
@@ -210,7 +241,7 @@ else:
 #st.scatter_chart(data = df_holeS,x=SN,y=PN,color=str(hole))
 #st.bar_chart(df_holeS,x=PN,y=SN)
 
-with st.expander("patt散布図",expanded=True):
+with st.expander(f"patt_ScatterChart 3 PATTの数 {temp_hole.shape[0]}"):
     #グラフ設定 matplotlib
     fig, ax = plt.subplots()
 
@@ -218,8 +249,8 @@ with st.expander("patt散布図",expanded=True):
     ax.scatter(
         x=df_holef[SN],
         y=df_holef[PN],
-        s=df_holef[str(hole)],
-        c=df_holef[PP],
+        c=df_holef[str(hole)],
+        #c=df_holef[PP],
         alpha=0.8,
         #vmin=df_holef[str(hole)].min(),
         #vmax=df_holef[str(hole)].max()
