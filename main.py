@@ -126,32 +126,48 @@ countGon=df_holef[df_holef[GIR_result].str.contains("GO", case=False, na=False)]
 
 
 pd.options.display.float_format = '{:.2f}'.format
-bun_title = f"{str(hole)} 番ホール_ラウンド数 {df_holef.shape[0]} 回 "
-st.subheader(bun_title)
+bun_title = f"{str(hole)} 番ホール :golfer: {df_holef.shape[0]} 回 "
+st.title(bun_title)
 
 if OBnumbers == 0:
-    lastdate = "なし"
+    lastdateOB = "なし"
 else:
-    lastdate = countTOB.iat[0,11]
+    lastdateOB = countTOB.iat[0,11]
 
 
-st.caption(f"最後のOBは、{lastdate}")
 
 #
 #DoubleBoggy以上
 #
 if hole == 17 or hole == 10 or hole == 4 or hole == 7:
     temp_hole = df_holef[df[str(hole)] > 4 ]
+    iconOB = ":o:"
+    iconp = ":three:"
 elif hole == 6 or hole == 8 or hole == 14 or hole == 18:
     temp_hole = df_holef[df[str(hole)] > 6 ]
+    iconOB = ":ok_woman:"
+    iconp = ":five:"
 else:
     temp_hole = df_holef[df[str(hole)] > 5 ]
+    iconOB = ":ok_woman:"
+    iconp = ":four:"
 if temp_hole.shape[0] == 0:
     lastdate = "なし"
 else:
     lastdate = temp_hole.iat[0,11]
 
-st.caption(f"最後のDouble Boggy以上は、{lastdate}")
+#
+# Holeの位置
+#
+if hole == 12 or hole == 5 or hole == 4 or hole == 7 or hole == 16 or hole == 17 :
+    icon_visible_green = ":full_moon_with_face:"
+else:
+    icon_visible_green = ":new_moon_with_face:"
+
+
+pd.options.display.float_format = '{:.2f}'.format
+st.subheader(f"Score Average {iconp} {df_hole[str(hole)].mean()}")
+st.write(f"DB以上:golf:{lastdate}")
 
 #
 # ３Patt
@@ -161,32 +177,42 @@ if temp_hole.shape[0] == 0:
     lastdate = "なし"
 else:
     lastdate = temp_hole.iat[0,11]
-st.caption(f"最後の3pattは、{lastdate}")
 
-st.write("メトリクス")
 col1,col2,col3=st.columns((1,1,1))
 
 with col1:
+    totalobnumbers = OBnumbers + count2OB.shape[0]
     st.metric(
-        label="TeeingOB数",
-        value=OBnumbers,
-        delta=OBnumbers_latest
+        label=f"{iconOB} OB 数",
+        value=totalobnumbers,
     )
+    with st.expander(f"TeeingOB {OBnumbers} :: 2nd OB {count2OB.shape[0]}"):
+        st.text(f"最後のOBは、{lastdateOB}")
+        st.metric(
+            label="TeeingOB数",
+            value=OBnumbers,
+        )
+        st.metric(
+            label="2ndOB率",
+            value=count2OB.shape[0],
+        )
 
 with col2:
     st.metric(
-        label="2ndOB率",
-        value=count2OB.shape[0],
-        delta=count2OB[count2OB["Year"] == this_year].shape[0]
+        label=f"{icon_visible_green} GreenOnしなかった数",
+        value=df_holef.shape[0]-countGon.shape[0],
     )
+    st.text(f"fairwaykeepできなかった数")
 with col3:
     st.metric(
-        label="GreenOnの数",
-        value=countGon.shape[0],
-        delta=countGon[countGon["Year"] == this_year].shape[0]
+        label=":man-facepalming:3 Patt 数",
+        value=temp_hole.shape[0],
     )
+    st.text(f"1st Pattの平均{df_hole[SN].mean()}")
+    st.text(f"最後の3pattは、{lastdate}")
+    st.text(f"3patt時の距離{temp_hole[SN].mean()}")
 
-st.write("スコア")
+
 
 # スコアの時系列図
 with st.expander(f"Score時系列データ {df_holef[str(hole)].head(3)} "):
@@ -281,14 +307,21 @@ with col1:
     
 
 with col2:
-    map_data = pd.DataFrame(
-        np.random.randn(1000,2)/[50,50] + [35.3894,139.20],
-        columns=["lat","lon"]
-    )
+    #Ｇｒｅｅｎの画像表示
+    im = "./pict/HN"+("0"+str(hole))[-2:]+".png"
+    #st.sidebar.write(im)
+    image = Image.open(im)
 
-    st.map(map_data)
+    st.image(image, caption=im[-6:-4])
+    #map_data = pd.DataFrame(
+    #    np.random.randn(1000,2)/[50,50] + [35.3894,139.20],
+    #    columns=["lat","lon"]
+    #)
+    #
+    #st.map(map_data)
 
-df
+
+st.dataframe(df.style.background_gradient(cmap="Greens"),hide_index=True)
 
 df2 = df[['Score','OB',"1"]]
 df2
