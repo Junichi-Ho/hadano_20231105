@@ -307,12 +307,12 @@ with col1:
     
 
 with col2:
-    #Ｇｒｅｅｎの画像表示
-    im = "./pict/HN"+("0"+str(hole))[-2:]+".png"
-    #st.sidebar.write(im)
-    image = Image.open(im)
-
-    st.image(image, caption=im[-6:-4])
+    ##Ｇｒｅｅｎの画像表示
+    #im = "./pict/HN"+("0"+str(hole))[-2:]+".png"
+    ##st.sidebar.write(im)
+    #image = Image.open(im)
+    st.write("高速化必要")
+    #st.image(image, caption=im[-6:-4])
     #map_data = pd.DataFrame(
     #    np.random.randn(1000,2)/[50,50] + [35.3894,139.20],
     #    columns=["lat","lon"]
@@ -321,8 +321,8 @@ with col2:
     #st.map(map_data)
 
 
-st.dataframe(df.style.background_gradient(cmap="Greens"),hide_index=True)
+#st.dataframe(df.style.background_gradient(cmap="Greens"),hide_index=True)
 
-df2 = df[['Score','OB',"1"]]
-df2
+#df2 = df[['Score','OB',"1"]]
+#df2
 
