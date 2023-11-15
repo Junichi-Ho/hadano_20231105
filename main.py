@@ -5,6 +5,8 @@ from PIL import Image
 import matplotlib.pyplot as plt
 import datetime
 
+st.set_page_config(layout="wide")
+
 
 # CSVファイルの読み込み
 csvfile = "20231104_HatanoScore.csv"
@@ -15,9 +17,9 @@ df["Date"]=pd.to_datetime(df["Date"], format="mixed")
 
 df["Year"] = df["Date"].apply(lambda x : x.strftime("%y"))
 df["Month"] = df["Date"].apply(lambda x : x.strftime("%m"))
-#df = df.set_index("Date")
 
-st.set_page_config(layout="wide")
+df["Date"]= df["Date"].dt.strftime("%y.%m.%d")
+#df = df.set_index("Date")
 
 
 #
@@ -28,11 +30,11 @@ st.set_page_config(layout="wide")
 #最近のスコア表示
 if st.sidebar.checkbox("最近のスコア表示"):
     df3 = df[['Score','OB',"Out","In"]]
-    st.sidebar.write(df3)
+    st.sidebar.table(df3.head(10))
 
 #イン アウト選択により絞り込む （前中後にしたいが）
-y = st.sidebar.radio("Out / In",("Out","In"), horizontal=True)
-if y == "Out" :
+out_in = st.sidebar.radio("Out / In",("Out","In"), horizontal=True)
+if out_in == "Out" :
     hole = st.sidebar.selectbox(
     "Hole",[1,2,3,4,5,6,7,8,9]
     )
@@ -96,15 +98,12 @@ month_list = list(df_hole["Month"].unique())
 select_month = st.sidebar.multiselect("月でFilterling",month_list,default=month_list)
 df_holef = df_holef[(df_holef["Month"].isin(select_month))]
 
+
 ###
 ###
 ###ここから
 ###
 ###
-
-
-#x = st.slider("x")
-#st.write(x, "xtimes2",2*x)
 
 ##メトリック表示
 this_year = 2023 #比較する年を記載する
@@ -123,18 +122,10 @@ count2OB=df_holef[df_holef[GIR_result].str.contains("OB", case=False, na=False)]
 countGon=df_holef[df_holef[GIR_result].str.contains("GO", case=False, na=False)]
 
 
-
-
-pd.options.display.float_format = '{:.2f}'.format
-bun_title = f"{str(hole)} 番ホール :golfer: {df_holef.shape[0]} 回 "
-st.title(bun_title)
-
 if OBnumbers == 0:
     lastdateOB = "なし"
 else:
     lastdateOB = countTOB.iat[0,11]
-
-
 
 #
 #DoubleBoggy以上
@@ -151,6 +142,7 @@ else:
     temp_hole = df_holef[df[str(hole)] > 5 ]
     iconOB = ":ok_woman:"
     iconp = ":four:"
+
 if temp_hole.shape[0] == 0:
     lastdate = "なし"
 else:
@@ -161,14 +153,23 @@ else:
 #
 if hole == 12 or hole == 5 or hole == 4 or hole == 7 or hole == 16 or hole == 17 :
     icon_visible_green = ":full_moon_with_face:"
+elif hole == 2 or hole == 9 or hole == 10 or hole == 15 :
+    icon_visible_green = ":first_quarter_moon_with_face:"
 else:
     icon_visible_green = ":new_moon_with_face:"
 
 
-pd.options.display.float_format = '{:.2f}'.format
-st.subheader(f"Score Average {iconp} {df_hole[str(hole)].mean()}")
-st.write(f"DB以上:golf:{lastdate}")
+bun_title = f"{out_in} _ {str(hole)}  :golfer: {df_holef.shape[0]} 回 Par {iconp} Avg {df_hole[str(hole)].mean():.3f} "
+st.subheader(bun_title)
 
+labelCB = f":golf: Avg patt {df_hole[PN].mean():.1f} _ :skull: Last DB以上 _ {lastdate}"
+if st.checkbox(label=labelCB):
+    ##Ｇｒｅｅｎの画像表示
+    im = "./pict/HN"+("0"+str(hole))[-2:]+".png"
+    ##st.sidebar.write(im)
+    image = Image.open(im)
+    st.image(image, caption=im[-6:-4])
+    
 #
 # ３Patt
 #
@@ -202,20 +203,19 @@ with col2:
         label=f"{icon_visible_green} GreenOnしなかった数",
         value=df_holef.shape[0]-countGon.shape[0],
     )
-    st.text(f"fairwaykeepできなかった数")
+    #st.text(f"fairwaykeepできなかった数")
 with col3:
     st.metric(
         label=":man-facepalming:3 Patt 数",
         value=temp_hole.shape[0],
     )
-    st.text(f"1st Pattの平均{df_hole[SN].mean()}")
+    st.text(f"1st Pattの平均 {df_hole[SN].mean():.2f}")
     st.text(f"最後の3pattは、{lastdate}")
-    st.text(f"3patt時の距離{temp_hole[SN].mean()}")
-
 
 
 # スコアの時系列図
 with st.expander(f"Score時系列データ {df_holef[str(hole)].head(3)} "):
+    st.caption("左が最新")
     df_areac = df_holef[[str(hole),PN]]
     st.line_chart(df_areac)
 
@@ -223,7 +223,7 @@ with st.expander(f"Score時系列データ {df_holef[str(hole)].head(3)} "):
 #df.columns
 
 #スコアのヒストグラム表示
-with st.expander(f"Score_ヒストグラム:平均 {df_hole[str(hole)].mean()}"):
+with st.expander(f"Score_ヒストグラム:平均 {df_hole[str(hole)].mean():.3f}"):
     #グラフ設定 matplotlib
     fig, ax = plt.subplots()
 
@@ -267,7 +267,7 @@ with st.expander(f"データフレーム:ラウンド数は {str(df_holef.shape[
 #st.scatter_chart(data = df_holeS,x=SN,y=PN,color=str(hole))
 #st.bar_chart(df_holeS,x=PN,y=SN)
 
-with st.expander(f"patt_ScatterChart 3 PATTの数 {temp_hole.shape[0]}"):
+with st.expander(f"patt_ScatterChart 3 PATTの数 {temp_hole.shape[0]}  _ 3patt時の距離 {temp_hole[SN].mean():.2f}"):
     #グラフ設定 matplotlib
     fig, ax = plt.subplots()
 
@@ -292,8 +292,9 @@ with st.expander("1st Patt 残り歩数 ヒストグラム"):
     st.pyplot(fig2, use_container_width=True)
 
 #データフレーム表示
-st.write("データフレーム詳細")
-df_holef[[str(hole),Teeing,T_result,GIR,GIR_result,Haz,PP,SN,PN]]
+with st.expander("データフレーム詳細"):
+    st.write("データフレーム詳細")
+    df_holef[[str(hole),Teeing,T_result,GIR,GIR_result,Haz,PP,SN,PN]]
 
 
 col1,col2=st.columns((1,1))
