@@ -169,15 +169,13 @@ def show_dataframe(hole,df_holef,countGon):
 st.set_page_config(layout="wide")
 df = main_dataframe("20231104_HatanoScore.csv")
 
-#
-# サイドバー表示
-#　sidebarを加える
-#
-####
+#######################
+# サイドバー表示       #
+#　sidebarを加える    #
+######################
 #df_h = ホールにフィルター
 #df_holef = 年 月 PinPosition で Filterしたもの 
-#####
-
+######################
 #最近のスコア表示
 if st.sidebar.checkbox("最近のスコア表示"):
     df3 = df[['Score','OB',"Out","In"]]
@@ -209,15 +207,14 @@ caption = green_image(str(hole),"HN")[1]
 st.sidebar.image(image,caption=caption)
 
 #PinポジでFilterするオプション　#Streamlitのマルチセレクト
-PP_list = list(df_h["PP"].unique())
-select_PP = st.sidebar.multiselect("Pin PositionでFilterling",PP_list,default=PP_list)
-df_holef = df_holef[(df_holef["PP"].isin(select_PP))]
+#PP_list = list(df_h["PP"].unique())
+#select_PP = st.sidebar.multiselect("Pin PositionでFilterling",PP_list,default=PP_list)
+#df_holef = df_holef[(df_holef["PP"].isin(select_PP))]
 
 #月でFilterするオプション　#Streamlitのマルチセレクト
 month_list = list(df_h["m"].unique())
 select_month = st.sidebar.multiselect("月でFilterling",month_list,default=month_list)
 df_holef = df_holef[(df_holef["m"].isin(select_month))]
-
 
 ####
 #hole =ホール integer
@@ -244,7 +241,10 @@ df_ODB,lastdate,iconOB,iconp = generate_sub_dataframe_ODB(hole,df_holef)
 #グリーンが上にありピンが見えないホールなのかアイコン化する。
 icon_visible_green,df_3patt,lastdate_3 = generate_sub_dataframe_HP(hole,df_holef)
 
-### 表示
+###################
+### 表示       ####
+###################
+
 #タイトルは、In/OUT Hole Number、回数 打数アベレージを記載
 bun_title = f"{out_in}{str(hole)}  :golfer: {df_holef.shape[0]} {iconp} {df_holef[str(hole)].mean():.3f} "
 st.subheader(bun_title)
@@ -257,15 +257,12 @@ if st.checkbox(label=labelCB):
     caption = green_image(str(hole),"HN")[1]
     st.image(image,caption=caption)
     
-
 col1,col2,col3=st.columns((1,1,1))
-
 with col1:
     totalobnumbers = OBnumbers + count2OB.shape[0]
     st.metric(label=f"{iconOB} OB 数",value=totalobnumbers,)
     st.write(f"TOB {OBnumbers} : 2OB {count2OB.shape[0]}")
     
-
 with col2:
     st.metric(
         label=f"{icon_visible_green} GreenOnしなかった数",
@@ -303,16 +300,39 @@ with st.expander(f"データフレーム:ラウンド数は {str(df_holef.shape[
 #st.scatter_chart(data = df_holeS,x=SN,y=PN,color=str(hole))
 #st.bar_chart(df_holeS,x=PN,y=SN)
 
+labelPinPosition = "Pin Position別 解析"
+if st.checkbox(label=labelPinPosition):
+    #PinポジでFilterするオプション　#Streamlitのマルチセレクト
+    PP_list = list(df_holef["PP"].unique())
+    #select_PP = st.multiselect("Pin PositionでFilterling",PP_list,default=PP_list)
+    #df_holef = df_holef[(df_holef["PP"].isin(select_PP))]
+
+    #文字列化 PP_listは整数なので、st.tabsに使えないので。
+    str_list = [str(num) for num in PP_list]
+    # タブの作成
+    tabs = st.tabs(str_list)
+    # 各タブにコンテンツを追加
+    for i, tab in enumerate(tabs):
+        with tab:
+            #st.write(f"This is the Dataframe filter by {str_list[0]}")
+            df_temp_hole = df_holef[df_holef["PP"] == PP_list[i] ]
+            st.write(f"数 {df_temp_hole.shape[0]}")
+            st.dataframe(df_temp_hole[["PP","TR","Comment","G","GR","SN","PN",str(hole),"Date"]].style.background_gradient(cmap="Greens"),hide_index=True)
 
 
 
 
-tab1, tab2, tab3, tab4 = st.tabs(["image","Score", "OB", "3Patt"])
+tab1, tab15 ,tab2, tab3, tab4 = st.tabs([":man-golfing:",":golf:","Score", "OB", "3Patt"])
 
 with tab1:
     image = green_image(str(hole),"TG")[0]
     caption = green_image(str(hole),"TG")[1]
     st.image(image,caption=caption)
+
+with tab15:
+    image = green_image(str(hole),"HN")[0]
+    caption = green_image(str(hole),"HN")[1]
+    st.image(image,caption=caption) 
 
 with tab2:
 
