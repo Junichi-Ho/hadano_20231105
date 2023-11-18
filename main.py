@@ -161,6 +161,22 @@ def show_dataframe(hole,df_holef,countGon):
         else:
             st.dataframe(df_holef[["PP","TR","Comment","G","GR","SN","PN",str(hole),"Date"]].style.background_gradient(cmap="Greens"),hide_index=True)
 
+@st.cache_data
+def reference_dataframe(df_h,thisyear,hole):
+    df_ref = df_h[df_h["y"].str.contains(str(thisyear),case=False,na=False)]
+    if hole == 17 or hole == 10 or hole == 4 or hole == 7:
+        TOB = 0
+    else:
+        df_refOB = df_ref[df_ref["TR"].str.contains("OB", case=False, na=False)]
+        TOB = df_refOB.shape[0] 
+    df_ref2O = df_ref[df_ref["GR"].str.contains("OB", case=False, na=False)]
+    df_refFW = df_ref[df_ref["GR"].str.contains("GO", case=False, na=False)]
+    df_ref3P = df_ref[df_ref["PN"] > 2 ]
+    ref_num = df_ref.shape[0]
+    ref_OB = TOB + df_ref2O.shape[0]
+    ref_paron = df_ref.shape[0]-df_refFW.shape[0]
+    ref_3patt = df_ref3P.shape[0]
+    return(ref_num,ref_OB,ref_paron,ref_3patt)
 
 def main():
 
@@ -230,60 +246,77 @@ def main():
     ###
 
     ##メトリック表示
-    this_year = 2023 #比較する年を記載する
 
     #1st OBのデータフレーム、2nd OBのデータフレーム、GIRのGonのデータフレーム,OB数と最後のOBになった日付データ
-    countTOB,count2OB,countGon,OBnumbers,lastdateOB = generate_sub_dataframe(hole,df_holef)
+    df_countTOB,df_count2OB,df_countGon,OBnumbers,lastdateOB = generate_sub_dataframe(hole,df_holef)
     #dataframeは後でわかるようにdf_に変えること
 
     #overDBのデータフレーム、最後にたたいたダボの日付, OBのアイコン(Par3の場合1stOBないから)、ParNumberアイコン
     df_ODB,lastdate,iconOB,iconp = generate_sub_dataframe_ODB(hole,df_holef)
-    #dataframeは後でわかるようにdf_に変えること
 
     #グリーンが上にありピンが見えないホールなのかアイコン化する。
     icon_visible_green,df_3patt,lastdate_3 = generate_sub_dataframe_HP(hole,df_holef)
+
+    #リファレンス 年間のデータを集計 年間ラウンド 年間OB Teeingのリザルト＋GIRのリザルトの合計のみ Hazard columnは含まず
+    #GONしなかった数 3パットの数
+    this_year = 23 #比較する年を記載する 2023年
+    ref_num,ref_OB,ref_paron,ref_3patt = reference_dataframe(df_h,this_year,hole)
 
     ###################
     ### 表示       ####
     ###################
 
-    #タイトルは、In/OUT Hole Number、回数 打数アベレージを記載
+    # 1  # タイトルは、In/OUT Hole Number、回数 打数アベレージを記載
     bun_title = f"{out_in}{str(hole)}  :golfer: {df_holef.shape[0]} {iconp} {df_holef[str(hole)].mean():.3f} "
     st.subheader(bun_title)
 
-    pattave = df_holef["PN"].mean()
-    labelCB = f":deer: patt {pattave:.2f} _ :skull: DB以上 {lastdate}"
-    if st.checkbox(label=labelCB):
-        ##Ｇｒｅｅｎの画像表示
-        image = green_image(str(hole),"HN")[0]
-        caption = green_image(str(hole),"HN")[1]
-        st.image(image,caption=caption)
-        st.snow()
-        
-    col1,col2,col3=st.columns((1,1,1))
-    with col1:
-        totalobnumbers = OBnumbers + count2OB.shape[0]
-        st.metric(label=f"{iconOB} OB 数",value=totalobnumbers,)
-        st.write(f"TOB {OBnumbers} : 2OB {count2OB.shape[0]}")
-        
-    with col2:
-        st.metric(
-            label=f"{icon_visible_green} GreenOnしなかった数",
-            value=df_holef.shape[0]-countGon.shape[0],)
-        pattave=df_holef["SN"].mean()
-        st.write(f"1st Pattの平均 {pattave:.2f}")
-        #st.text(f"fairwaykeepできなかった数")
+    # 2  # メトリクス
+    labelPinPosition = " 数 / 平均 " 
+    if st.toggle(label=labelPinPosition):
+        col1,col2,col3=st.columns((1,1,1))
+        with col1:
+            totalobnumbers = OBnumbers + df_count2OB.shape[0]
+            st.metric(label=f"{iconOB} TOB {OBnumbers} : 2OB {df_count2OB.shape[0]}",value=totalobnumbers,delta=ref_OB)
+            
+        with col2:
+            pattave=df_holef["SN"].mean()
+            st.metric(
+                label=f"{icon_visible_green} NOT GOn _ 1st Patt Ave {pattave:.2f}",
+                value=df_holef.shape[0]-df_countGon.shape[0],delta=str(ref_paron))
+            
+        with col3:
+            label = f":man-facepalming: :field_hockey_stick_and_ball: :field_hockey_stick_and_ball: :field_hockey_stick_and_ball: :calendar:{lastdate_3}"
+            st.metric(label=label,value=df_3patt.shape[0],delta=str(ref_3patt))
+    else:
+        if df_holef.shape[0]:
+            base = df_holef.shape[0]
+        else:
+            base = 1000
+        col1,col2,col3=st.columns((1,1,1))
+        with col1:
+            totalobnumbers = OBnumbers + df_count2OB.shape[0]
+            a = totalobnumbers/base*100
+            b = ref_OB/ref_num*100
+            st.metric(label=f"{iconOB} TOB {OBnumbers} : 2OB {df_count2OB.shape[0]}",value=f"{a:.2f}",delta=f"{b:.2f}")
+            
+        with col2:
+            a = (df_holef.shape[0]-df_countGon.shape[0])/base*100
+            b = ref_paron/ref_num*100
+            pattave=df_holef["SN"].mean()
+            st.metric(
+                label=f"{icon_visible_green} NOT GOn _ 1st Patt Ave {pattave:.2f}",
+                value=f"{a:.2f}",delta=f"{b:.2f}")
+            
+        with col3:
+            a = df_3patt.shape[0]/base*100
+            b = ref_3patt/ref_num*100
+            label = f":man-facepalming: :field_hockey_stick_and_ball: :field_hockey_stick_and_ball: :field_hockey_stick_and_ball: :calendar:{lastdate_3}"
+            st.metric(label=label,value=f"{a:.2f}",delta=f"{b:.2f}")
 
-    with col3:
-        st.metric(label=":man-facepalming:3 Patt 数",value=df_3patt.shape[0],)
-        st.write(f" :calendar:{lastdate_3}")
 
 
-    #開発用 Index一覧
-    #df.columns
-
-    #スコアのヒストグラム表示
-    with st.expander(f"Score_ヒストグラム:平均 {df_holef[str(hole)].mean():.3f}"):
+    # 3  # スコアのヒストグラム表示 
+    with st.expander(f"Score_hist.: :skull: DB以上 {lastdate}"):
         #グラフ設定 matplotlib
         fig, ax = plt.subplots()
 
@@ -293,18 +326,27 @@ def main():
         st.pyplot(fig, use_container_width=True)
 
 
-    #データフレーム表示
-    with st.expander(f"データフレーム:ラウンド数は {str(df_holef.shape[0])} 回"):
-        show_dataframe(hole,df_holef,countGon)
+    # 4 # データフレーム表示
+    with st.expander(f"Dataframe:ラウンド数は {str(df_holef.shape[0])} 回"):
+        show_dataframe(hole,df_holef,df_countGon)
 
     #df_holef.dtypes
     #df_holeS = df_holef[[PN,SN,str(hole)]]
     #df_holeS
     #st.scatter_chart(data = df_holeS,x=SN,y=PN,color=str(hole))
     #st.bar_chart(df_holeS,x=PN,y=SN)
+    pattave = df_holef["PN"].mean()
+    labelCB = f":deer: patt {pattave:.2f}"
+    #if st.checkbox(label=labelCB):
+        ##Ｇｒｅｅｎの画像表示
+    #    image = green_image(str(hole),"HN")[0]
+    #    caption = green_image(str(hole),"HN")[1]
+    #    st.image(image,caption=caption)
+    #    st.snow()
 
-    labelPinPosition = "Pin Position別 解析"
-    if st.checkbox(label=labelPinPosition):
+    # 5 # #PP別 データ提供
+    labelPinPosition = " PP別 解析_" + labelCB 
+    if st.toggle(label=labelPinPosition):
         #PinポジでFilterするオプション　#Streamlitのマルチセレクト
         PP_list = list(df_holef["PP"].unique())
         #select_PP = st.multiselect("Pin PositionでFilterling",PP_list,default=PP_list)
@@ -322,11 +364,8 @@ def main():
                 st.write(f"数 {df_temp_hole.shape[0]}")
                 st.dataframe(df_temp_hole[["TR","Comment","G","GR","SN","PN",str(hole),"Date"]].style.background_gradient(cmap="Reds"),hide_index=True)
 
-
-
-
+    # 6 # #多様な深堀のためのデータ提供
     tab1, tab15 ,tab2, tab3, tab4 = st.tabs([":man-golfing:",":golf:",":musical_score:", ":ok_woman:", ":field_hockey_stick_and_ball:"])
-
     with tab1:
         image = green_image(str(hole),"TG")[0]
         caption = green_image(str(hole),"TG")[1]
@@ -337,34 +376,26 @@ def main():
         caption = green_image(str(hole),"HN")[1]
         st.image(image,caption=caption) 
 
-    with tab2:
+    with tab2:# スコアの時系列図 
         subtab1, subtab2 = st.tabs(["chart","database"])
         with subtab1:
             st.caption("左が最新")
             df_areac = df_holef[[str(hole),"PN"]]
             st.line_chart(df_areac)
         with subtab2:
-            st.dataframe(df_ODB.style.background_gradient(cmap="Grays"),hide_index=True)
+            st.dataframe(df_ODB.style.background_gradient(cmap="Blues"),hide_index=True)
 
-        # スコアの時系列図
-        #with st.expander(f"Score時系列{df_holef[str(hole)].head(3)} "):
-        #    st.caption("左が最新")
-        #    df_areac = df_holef[[str(hole),"PN"]]
-        #    st.line_chart(df_areac)
-        #    df_ODB
-
-
-    with tab3:
+    with tab3:# OBの深堀 
         st.write(f":calendar:{lastdateOB}")
         st.metric(label="TeeingOB数",value=OBnumbers,)
-        st.metric(label="2ndOB率",value=count2OB.shape[0],)
-        countTOB
+        st.metric(label="2ndOB率",value=df_count2OB.shape[0],)
+        df_countTOB
         #データフレーム表示
         with st.expander("データフレーム詳細"):
             st.write("データフレーム詳細")
             df_holef[[str(hole),"T","TR","GR","Comment","PP","SN","PN"]]
 
-    with tab4:
+    with tab4:# Pattの深堀 
         pattave = df_3patt["SN"].mean()
         patt3 = f"3 PATTの数 {df_3patt.shape[0]}  _ 3patt時の距離 {pattave:.2f} scatterchart"
 
