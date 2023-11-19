@@ -70,9 +70,9 @@ def plot_distribution(df_stadata, selected_years, selected_score_type):
     plt.ylabel('Frequency')
 
     # 凡例が存在する場合のみ削除
-    legend = plt.legend()
-    if legend:
-        legend.remove()
+    #legend = plt.legend()
+    #if legend:
+    #    legend.remove()
 
     st.pyplot(plt)
 
@@ -101,8 +101,8 @@ def main_display(df,df_event,df_stadata):
     df_monthly_average = average_per_month(df_stadata)
 
     st.title("STATS")
-    with st.expander(f"For Developping"):
-        st.dataframe(df)
+    #with st.expander(f"For Developping"):
+    #    st.dataframe(df)
     
     with st.expander(f"年ごとのScore分布"):
         # 年の一覧を取得
