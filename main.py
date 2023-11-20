@@ -5,6 +5,7 @@ from PIL import Image
 import matplotlib.pyplot as plt
 import datetime
 import cf
+import plotly.graph_objects as go
 
 #@st.cache_data
 #def green_image(holenum,pfile): #ホールごとのイメージの取り込み
@@ -40,6 +41,7 @@ def dataframe_by_hole(df,hole): # ホールごとのデータフレームの作�
         PP = "Pin位置" + "." + str(hole-1)
         SN = "歩数" + "." + str(hole-1)
         PN = "Patt数" + "." + str((hole-1)*2)
+        PH = "Patt数" + "." + str((hole-1)*2+1)
     else:
         Teeing = "Teeing番手"
         T_result = "結果"
@@ -49,8 +51,9 @@ def dataframe_by_hole(df,hole): # ホールごとのデータフレームの作�
         PP = "Pin位置"
         SN = "歩数"
         PN = "Patt数"
-    df_hole = df[[str(hole),Teeing,T_result,GIR,GIR_result,Haz,PP,SN,PN,"Year","Month","Date"]]
-    rename_dict = {Teeing:"T",T_result:"TR",GIR:"G",GIR_result:"GR",Haz:"Comment",PP:"PP",SN:"SN",PN:"PN","Year":"y","Month":"m"}
+        PH = "Patt数" + ".1"
+    df_hole = df[[str(hole),Teeing,T_result,GIR,GIR_result,Haz,PP,SN,PN,PH,"Year","Month","Date"]]
+    rename_dict = {Teeing:"T",T_result:"TR",GIR:"G",GIR_result:"GR",Haz:"Comment",PP:"PP",SN:"SN",PN:"PN",PH:"PH","Year":"y","Month":"m"}
     df_hole = df_hole.copy()
     df_hole.rename(columns=rename_dict,inplace=True)
     return df_hole
@@ -87,14 +90,17 @@ def generate_sub_dataframe_ODB(hole,df_holef):#DoubleBoggy以上
     #overDBのデータフレーム、最後にたたいたダボの日付, OBのアイコン(Par3の場合1stOBないから)、ParNumberアイコン 
     if hole == 17 or hole == 10 or hole == 4 or hole == 7:
         temp_hole = df_holef[df_holef[str(hole)] > 4 ]
+        df_db_on = df_holef[df_holef["PH"] > 2]
         iconOB = ":o:"
         iconp = ":three:"
     elif hole == 6 or hole == 8 or hole == 14 or hole == 18:
         temp_hole = df_holef[df_holef[str(hole)] > 6 ]
+        df_db_on = df_holef[df_holef["PH"] > 4]
         iconOB = ":ok_woman:"
         iconp = ":five:"
     else:
         temp_hole = df_holef[df_holef[str(hole)] > 5 ]
+        df_db_on = df_holef[df_holef["PH"] > 3]
         iconOB = ":ok_woman:"
         iconp = ":four:"
 
@@ -104,7 +110,7 @@ def generate_sub_dataframe_ODB(hole,df_holef):#DoubleBoggy以上
         lastdate = temp_hole.iat[0,11] 
 
     #overDBのデータフレーム、最後にたたいたダボの日付, OBのアイコン(Par3の場合1stOBないから)、ParNumberアイコン 
-    return(temp_hole,lastdate,iconOB,iconp)
+    return(temp_hole,df_db_on,lastdate,iconOB,iconp)
 
 
 @st.cache_data
@@ -178,7 +184,7 @@ def main():
     ### Start 基本データフレームの作成
     st.set_page_config(layout="wide")
     df = cf.main_dataframe("20231104_HatanoScore.csv")
-
+    
     #######################
     # サイドバー表示       #
     #　sidebarを加える    #
@@ -244,8 +250,8 @@ def main():
     df_countTOB,df_count2OB,df_countGon,OBnumbers,lastdateOB = generate_sub_dataframe(hole,df_holef)
     #dataframeは後でわかるようにdf_に変えること
 
-    #overDBのデータフレーム、最後にたたいたダボの日付, OBのアイコン(Par3の場合1stOBないから)、ParNumberアイコン
-    df_ODB,lastdate,iconOB,iconp = generate_sub_dataframe_ODB(hole,df_holef)
+    #overDBのデータフレーム、ダボオン以上 、最後にたたいたダボの日付, OBのアイコン(Par3の場合1stOBないから)、ParNumberアイコン
+    df_ODB,df_db_on,lastdate,iconOB,iconp = generate_sub_dataframe_ODB(hole,df_holef)
 
     #グリーンが上にありピンが見えないホールなのかアイコン化する。
     icon_visible_green,df_3patt,lastdate_3 = generate_sub_dataframe_HP(hole,df_holef)
@@ -271,7 +277,8 @@ def main():
         col1,col2,col3=st.columns((1,1,1))
         with col1:
             totalobnumbers = OBnumbers + df_count2OB.shape[0]
-            st.metric(label=f"{iconOB} TOB {OBnumbers} : 2OB {df_count2OB.shape[0]}",value=totalobnumbers,delta=ref_OB)
+            dbon = df_db_on.shape[0] - df_count2OB.shape[0]
+            st.metric(label=f"{iconOB} TOB {OBnumbers} : 2OB {df_count2OB.shape[0]} : DBon-2OB {dbon}",value=totalobnumbers,delta=ref_OB)
             
         with col2:
             pattave=df_holef["SN"].mean()
@@ -292,12 +299,13 @@ def main():
         col1,col2,col3=st.columns((1,1,1))
         with col1:
             totalobnumbers = OBnumbers + df_count2OB.shape[0]
+            dbon = (df_db_on.shape[0] - df_count2OB.shape[0]) /base *100
             a = totalobnumbers/base*100
             b = ref_OB/ref_num*100
-            st.metric(label=f"{iconOB} TOB {OBnumbers} : 2OB {df_count2OB.shape[0]}",value=f"{a:.1f}",delta=f"{b:.1f}")
+            st.metric(label=f"{iconOB} TOB {OBnumbers} : 2OB {df_count2OB.shape[0]}  __ DBon-2OB {dbon} %",value=f"{a:.1f}",delta=f"{b:.1f}")
             
         with col2:
-            a = (df_holef.shape[0]-df_countGon.shape[0])/base*100
+            a = (df_holef.shape[0]-df_countGon.shape[0]-totalobnumbers)/(base-totalobnumbers)*100
             b = ref_paron/ref_num*100
             pattave=df_holef["SN"].mean()
             st.metric(
@@ -323,7 +331,7 @@ def main():
         show_dataframe(hole,df_holef,df_countGon)
 
     # 5 # #多様な深堀のためのデータ提供
-    tabITG, tabIHN ,tabPP, tabHist, tabOBs, tab3P = st.tabs([" :man-golfing: "," :golf: "," :1234: "," :musical_score: ", " :ok_woman: ", " :field_hockey_stick_and_ball: "])
+    tabdbs, tabITG, tabIHN ,tabPP, tabHist, tabOBs, tab3P, tabmeter = st.tabs(["DBon"," :man-golfing: "," :golf: "," :1234: "," :musical_score: ", " :ok_woman: ", " :field_hockey_stick_and_ball: ","meter"])
     with tabITG: #ホールイメージ TG00.png
         image = cf.green_image(str(hole),"TG")[0]
         caption = cf.green_image(str(hole),"TG")[1]
@@ -395,6 +403,24 @@ def main():
             ax2.hist(df_holef["SN"],bins=30,)
             st.pyplot(fig2, use_container_width=True)
 
+    with tabdbs:
+        df_db_on
+
+    with tabmeter:
+        # ゲージチャートの作成
+        fig = go.Figure(go.Indicator(
+            mode = "gauge+number",
+            value = 270,
+            domain = {'x': [0, 1], 'y': [0, 1]},
+            title = {'text': "Speed"},
+            gauge = {'axis': {'range': [None, 360]},
+                    'steps' : [
+                        {'range': [0, 130], 'color': "lightgray"},
+                        {'range': [130, 270], 'color': "gray"}],
+                    'threshold' : {'line': {'color': "red", 'width': 4}, 'thickness': 0.75, 'value': 270}}))
+
+        # Streamlitでゲージチャートの表示
+        st.plotly_chart(fig)
     ################ メモ 不採用ログ 過去ログ###############################################
     #df_holef.dtypes
     #df_holeS = df_holef[[PN,SN,str(hole)]]
