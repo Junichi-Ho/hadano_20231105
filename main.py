@@ -130,6 +130,8 @@ def generate_sub_dataframe_HP(hole,df_holef):# Holeの位置高さと3pattのデ
         lastdate_3 = "なし"
     else:
         lastdate_3 = df_temp_hole.iat[0,11]
+
+    
     
     return(icon_visible_green,df_temp_hole,lastdate_3)
 
@@ -277,7 +279,7 @@ def main():
         col1,col2,col3=st.columns((1,1,1))
         with col1:
             totalobnumbers = OBnumbers + df_count2OB.shape[0]
-            dbon = df_db_on.shape[0] - df_count2OB.shape[0]
+            dbon = df_db_on.shape[0] - totalobnumbers
             st.metric(label=f"{iconOB} TOB {OBnumbers} : 2OB {df_count2OB.shape[0]} : DBon-2OB {dbon}",value=totalobnumbers,delta=ref_OB)
             
         with col2:
@@ -299,7 +301,7 @@ def main():
         col1,col2,col3=st.columns((1,1,1))
         with col1:
             totalobnumbers = OBnumbers + df_count2OB.shape[0]
-            dbon = (df_db_on.shape[0] - df_count2OB.shape[0]) /base *100
+            dbon = (df_db_on.shape[0] - totalobnumbers) /base *100
             a = totalobnumbers/base*100
             b = ref_OB/ref_num*100
             st.metric(label=f"{iconOB} TOB {OBnumbers} : 2OB {df_count2OB.shape[0]}  __ DBon-2OB {dbon} %",value=f"{a:.1f}",delta=f"{b:.1f}")
@@ -404,7 +406,7 @@ def main():
             st.pyplot(fig2, use_container_width=True)
 
     with tabdbs:
-        df_db_on
+        df_db_on[~(df_db_on["TR"].str.contains("OB", case=False, na=False))]
 
     with tabmeter:
         # ゲージチャートの作成
@@ -418,6 +420,8 @@ def main():
                         {'range': [0, 130], 'color': "lightgray"},
                         {'range': [130, 270], 'color': "gray"}],
                     'threshold' : {'line': {'color': "red", 'width': 4}, 'thickness': 0.75, 'value': 270}}))
+        # サイズの調整
+        fig.update_layout(autosize=False, width=300, height=300)
 
         # Streamlitでゲージチャートの表示
         st.plotly_chart(fig)
