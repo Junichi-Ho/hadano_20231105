@@ -406,7 +406,7 @@ def main():
             st.pyplot(fig2, use_container_width=True)
 
     with tabdbs:
-        df_db_on[~(df_db_on["TR"].str.contains("OB", case=False, na=False))]
+        df_db_on
 
     with tabmeter:
         # ゲージチャートの作成
