@@ -107,7 +107,7 @@ def generate_sub_dataframe_ODB(hole,df_holef):#DoubleBoggy以上
     if temp_hole.shape[0] == 0:
         lastdate = "なし"
     else:
-        lastdate = temp_hole.iat[0,11] 
+        lastdate = temp_hole.iat[0,12] 
 
     #overDBのデータフレーム、最後にたたいたダボの日付, OBのアイコン(Par3の場合1stOBないから)、ParNumberアイコン 
     return(temp_hole,df_db_on,lastdate,iconOB,iconp)
@@ -129,10 +129,8 @@ def generate_sub_dataframe_HP(hole,df_holef):# Holeの位置高さと3pattのデ
     if df_temp_hole.shape[0] == 0:
         lastdate_3 = "なし"
     else:
-        lastdate_3 = df_temp_hole.iat[0,11]
+        lastdate_3 = df_temp_hole.iat[0,12]
 
-    
-    
     return(icon_visible_green,df_temp_hole,lastdate_3)
 
 #キャッシュ入れるとCheckboxの整合性が取れない警告出る。
@@ -178,6 +176,75 @@ def reference_dataframe(df_h,thisyear,hole):#メトリクス 比較のためのR
     ref_paron = df_ref.shape[0]-df_refFW.shape[0]
     ref_3patt = df_ref3P.shape[0]
     return(ref_num,ref_OB,ref_paron,ref_3patt)
+
+@st.cache_data
+def gauge_view(totalobnumbers,base,df_3patt,df_db_on):
+    # ゲージチャートの値を計算
+    totalobnumbers_value = totalobnumbers * 2 / base
+    df_db_on_value = (df_db_on.shape[0] - totalobnumbers) * 2 / base
+    df_3patt_value = df_3patt.shape[0] / base
+    other_value = 1.1 - totalobnumbers_value - df_db_on_value - df_3patt_value
+    # ゲージチャートの作成
+    fig = go.Figure(go.Indicator(
+        mode = "gauge+number",
+        value = totalobnumbers_value + df_db_on_value + df_3patt_value,
+        domain = {'x': [0, 1], 'y': [0, 1]},
+        title = {'text': "Factor"},
+        gauge = {
+            'axis': {'range': [None, 1.1]},
+            'steps' : [
+                {'range': [0, totalobnumbers_value], 'color': "yellow"},
+                {'range': [totalobnumbers_value, totalobnumbers_value + df_db_on_value], 'color': "yellowgreen"},
+                {'range': [totalobnumbers_value + df_db_on_value, totalobnumbers_value + df_db_on_value + df_3patt_value], 'color': "lime"},
+                {'range': [totalobnumbers_value + df_db_on_value + df_3patt_value, 1.1], 'color': "black"}],
+            'threshold' : {'line': {'color': "red", 'width': 4}, 'thickness': 0.75, 'value': 0.5}
+        }
+    ))
+    # サイズの調整
+    fig.update_layout(autosize=False, width=300, height=300)
+    return fig
+
+def taihi():
+    labelPinPosition = " ％ / 数 "+labelCB 
+    if st.toggle(label=labelPinPosition):
+        #カウント表示
+        col1,col2,col3=st.columns((1,1,1))
+        with col1:
+            dbon = df_db_on.shape[0] - totalobnumbers
+            st.metric(label=f"{iconOB} TOB {OBnumbers} : 2OB {df_count2OB.shape[0]} : DBon-2OB {dbon}",value=totalobnumbers,delta=ref_OB)
+            
+        with col2:
+            pattave=df_holef["SN"].mean()
+            st.metric(
+                label=f"{icon_visible_green} NOT GOn _ 1st Patt Ave {pattave:.2f}",
+                value=df_holef.shape[0]-df_countGon.shape[0],delta=str(ref_paron))
+            
+        with col3:
+            label = f":man-facepalming: :field_hockey_stick_and_ball: :field_hockey_stick_and_ball: :field_hockey_stick_and_ball: :calendar:{lastdate_3}"
+            st.metric(label=label,value=df_3patt.shape[0],delta=str(ref_3patt))
+    else:
+        #アベレージ表示 （デフォルト）
+
+        col1,col2,col3=st.columns((1,1,1))
+        with col1:            
+            dbon = (df_db_on.shape[0] - totalobnumbers) /base *100
+            a = totalobnumbers/base*100
+            b = ref_OB/ref_num*100
+            st.metric(label=f"{iconOB} TOB {OBnumbers} : 2OB {df_count2OB.shape[0]}  __ DBon-2OB {dbon:.2f} %",value=f"{a:.1f}",delta=f"{b:.1f}")
+            
+        with col2:
+            a = (df_holef.shape[0]-df_countGon.shape[0]-totalobnumbers)/(base-totalobnumbers)*100
+            b = ref_paron/ref_num*100
+            pattave=df_holef["SN"].mean()
+            st.metric(
+                label=f"{icon_visible_green} NOT GOn _ 1st Patt Ave {pattave:.2f}",
+                value=f"{a:.1f}",delta=f"{b:.1f}")
+            
+        with col3:
+            a = df_3patt.shape[0]/base*100
+            b = ref_3patt/ref_num*100
+            label = f":man-facepalming: :field_hockey_stick_and_ball: :field_hockey_stick_and_ball: :field_hockey_stick_and_ball: :calendar:{lastdate_3}"
+            st.metric(label=label,value=f"{a:.1f}",delta=f"{b:.1f}")
 
 def main():
 
@@ -246,7 +313,7 @@ def main():
     ###
     ###
 
-    ##メトリック表示
+    ##
 
     #1st OBのデータフレーム、2nd OBのデータフレーム、GIRのGonのデータフレーム,OB数と最後のOBになった日付データ
     df_countTOB,df_count2OB,df_countGon,OBnumbers,lastdateOB = generate_sub_dataframe(hole,df_holef)
@@ -275,33 +342,21 @@ def main():
         base = df_holef.shape[0]
     else:
         base = 1000 #分母で使用するので0にしない。
+    totalobnumbers = OBnumbers + df_count2OB.shape[0]
 
     pattave = df_holef["PN"].mean()
-    labelCB = f":deer: patt {pattave:.2f}"
-    labelPinPosition = " ％ / 数 "+labelCB 
-    if st.toggle(label=labelPinPosition):
-        #カウント表示
-        col1,col2,col3=st.columns((1,1,1))
-        with col1:
-            totalobnumbers = OBnumbers + df_count2OB.shape[0]
-            dbon = df_db_on.shape[0] - totalobnumbers
-            st.metric(label=f"{iconOB} TOB {OBnumbers} : 2OB {df_count2OB.shape[0]} : DBon-2OB {dbon}",value=totalobnumbers,delta=ref_OB)
-            
-        with col2:
-            pattave=df_holef["SN"].mean()
-            st.metric(
-                label=f"{icon_visible_green} NOT GOn _ 1st Patt Ave {pattave:.2f}",
-                value=df_holef.shape[0]-df_countGon.shape[0],delta=str(ref_paron))
-            
-        with col3:
-            label = f":man-facepalming: :field_hockey_stick_and_ball: :field_hockey_stick_and_ball: :field_hockey_stick_and_ball: :calendar:{lastdate_3}"
-            st.metric(label=label,value=df_3patt.shape[0],delta=str(ref_3patt))
-    else:
-        #アベレージ表示 （デフォルト）
+    labelCB = f" patt {pattave:.2f}"
 
+
+    meterG, percentageS, numberS = st.tabs([labelCB,":deer: ％",":deer: 数"])
+    with meterG:
+        fig = gauge_view(totalobnumbers,base,df_3patt,df_db_on)
+        # Streamlitでゲージチャートの表示
+        st.plotly_chart(fig)
+    with percentageS:
+       #アベレージ表示 （デフォルト）
         col1,col2,col3=st.columns((1,1,1))
-        with col1:
-            totalobnumbers = OBnumbers + df_count2OB.shape[0]
+        with col1:            
             dbon = (df_db_on.shape[0] - totalobnumbers) /base *100
             a = totalobnumbers/base*100
             b = ref_OB/ref_num*100
@@ -320,6 +375,23 @@ def main():
             b = ref_3patt/ref_num*100
             label = f":man-facepalming: :field_hockey_stick_and_ball: :field_hockey_stick_and_ball: :field_hockey_stick_and_ball: :calendar:{lastdate_3}"
             st.metric(label=label,value=f"{a:.1f}",delta=f"{b:.1f}")
+
+    with numberS:
+        #カウント表示
+        col1,col2,col3=st.columns((1,1,1))
+        with col1:
+            dbon = df_db_on.shape[0] - totalobnumbers
+            st.metric(label=f"{iconOB} TOB {OBnumbers} : 2OB {df_count2OB.shape[0]} : DBon-2OB {dbon}",value=totalobnumbers,delta=ref_OB)
+            
+        with col2:
+            pattave=df_holef["SN"].mean()
+            st.metric(
+                label=f"{icon_visible_green} NOT GOn _ 1st Patt Ave {pattave:.2f}",
+                value=df_holef.shape[0]-df_countGon.shape[0],delta=str(ref_paron))
+            
+        with col3:
+            label = f":man-facepalming: :field_hockey_stick_and_ball: :field_hockey_stick_and_ball: :field_hockey_stick_and_ball: :calendar:{lastdate_3}"
+            st.metric(label=label,value=df_3patt.shape[0],delta=str(ref_3patt))
 
     # 3  # スコアのヒストグラム表示 
     with st.expander(f"Score_hist.: :skull: DB以上 {lastdate}"):
@@ -407,34 +479,13 @@ def main():
             st.pyplot(fig2, use_container_width=True)
 
     with tabdbs:
+        fig = gauge_view(totalobnumbers,base,df_3patt,df_db_on)
+        # Streamlitでゲージチャートの表示
+        st.plotly_chart(fig)
         df_db_on
 
     with tabmeter:
-        # ゲージチャートの値を計算
-        totalobnumbers_value = totalobnumbers * 2 / base
-        df_db_on_value = (df_db_on.shape[0] - totalobnumbers) * 2 / base
-        df_3patt_value = df_3patt.shape[0] / base
-        other_value = 1.1 - totalobnumbers_value - df_db_on_value - df_3patt_value
-
-        # ゲージチャートの作成
-        fig = go.Figure(go.Indicator(
-            mode = "gauge+number",
-            value = totalobnumbers_value + df_db_on_value + df_3patt_value,
-            domain = {'x': [0, 1], 'y': [0, 1]},
-            title = {'text': "Factor"},
-            gauge = {
-                'axis': {'range': [None, 1.1]},
-                'steps' : [
-                    {'range': [0, totalobnumbers_value], 'color': "yellow"},
-                    {'range': [totalobnumbers_value, totalobnumbers_value + df_db_on_value], 'color': "yellowgreen"},
-                    {'range': [totalobnumbers_value + df_db_on_value, totalobnumbers_value + df_db_on_value + df_3patt_value], 'color': "lime"},
-                    {'range': [totalobnumbers_value + df_db_on_value + df_3patt_value, 1.1], 'color': "black"}],
-                'threshold' : {'line': {'color': "red", 'width': 4}, 'thickness': 0.75, 'value': 0.5}
-            }
-        ))
-        # サイズの調整
-        fig.update_layout(autosize=False, width=300, height=300)
-
+        fig = gauge_view(totalobnumbers,base,df_3patt,df_db_on)
         # Streamlitでゲージチャートの表示
         st.plotly_chart(fig)
 
