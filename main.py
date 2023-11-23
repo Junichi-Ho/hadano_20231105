@@ -191,7 +191,7 @@ def gauge_view(totalobnumbers,base,df_3patt,df_db_on):
         domain = {'x': [0, 1], 'y': [0, 1]},
         title = {'text': "Factor"},
         gauge = {
-            'axis': {'range': [None, 0.8]},
+            'axis': {'range': [None, 0.85]},
             'steps' : [
                 {'range': [0, totalobnumbers_value], 'color': "yellow"},
                 {'range': [totalobnumbers_value, totalobnumbers_value + df_db_on_value], 'color': "yellowgreen"},
