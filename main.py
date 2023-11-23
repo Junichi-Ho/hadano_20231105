@@ -191,7 +191,7 @@ def gauge_view(totalobnumbers,base,df_3patt,df_db_on):
         domain = {'x': [0, 1], 'y': [0, 1]},
         title = {'text': "Factor"},
         gauge = {
-            'axis': {'range': [None, 1.1]},
+            'axis': {'range': [None, 0.8]},
             'steps' : [
                 {'range': [0, totalobnumbers_value], 'color': "yellow"},
                 {'range': [totalobnumbers_value, totalobnumbers_value + df_db_on_value], 'color': "yellowgreen"},
@@ -350,9 +350,10 @@ def main():
 
     meterG, percentageS, numberS = st.tabs([labelCB,":deer: ％",":deer: 数"])
     with meterG:
-        fig = gauge_view(totalobnumbers,base,df_3patt,df_db_on)
         # Streamlitでゲージチャートの表示
+        fig = gauge_view(totalobnumbers,base,df_3patt,df_db_on)
         st.plotly_chart(fig)
+
     with percentageS:
        #アベレージ表示 （デフォルト）
         col1,col2,col3=st.columns((1,1,1))
