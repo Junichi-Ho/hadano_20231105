@@ -190,19 +190,21 @@ def gauge_view(totalobnumbers,base,df_3patt,df_db_on):
         mode = "gauge+number",
         value = totalobnumbers_value + df_db_on_value + df_3patt_value,
         domain = {'x': [0, 1], 'y': [0, 1]},
-        title = {'text': "Factor"},
+        title = {'text': "主要因 : OBs : ダボオン : 3パット", 'font': {'size': 14}},
         gauge = {
-            'axis': {'range': [None, 0.85]},
+            'axis': {'range': [None, 0.85], 'tickwidth': 1, 'tickcolor': "darkblue"},
+            'bar': {'color': "red"},
             'steps' : [
-                {'range': [0, totalobnumbers_value], 'color': "yellow"},
-                {'range': [totalobnumbers_value, totalobnumbers_value + df_db_on_value], 'color': "yellowgreen"},
-                {'range': [totalobnumbers_value + df_db_on_value, totalobnumbers_value + df_db_on_value + df_3patt_value], 'color': "lime"},
+                {'range': [0, totalobnumbers_value], 'color': "pink"},
+                {'range': [totalobnumbers_value, totalobnumbers_value + df_db_on_value], 'color': "indianred"},
+                {'range': [totalobnumbers_value + df_db_on_value, totalobnumbers_value + df_db_on_value + df_3patt_value], 'color': "firebrick"},
                 {'range': [totalobnumbers_value + df_db_on_value + df_3patt_value, 1.1], 'color': "black"}],
-            'threshold' : {'line': {'color': "red", 'width': 4}, 'thickness': 0.75, 'value': 0.5}
+            'threshold' : {'line': {'color': "green", 'width': 4}, 'thickness': 0.75, 'value': 0.5}
         }
     ))
     # サイズの調整
     fig.update_layout(autosize=False, width=300, height=300)
+    fig.update_layout(paper_bgcolor = "lavender", font = {'color': "darkblue", 'family': "Arial"})
     return fig
 
 
