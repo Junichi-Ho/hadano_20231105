@@ -95,8 +95,6 @@ def plot_distribution(df_stadata, selected_years, selected_score_type):
 #    st.pyplot(fig)
 
 def main_display(df,df_event,df_stadata):
-    
-
     df_yearly_average = average_per_year(df_stadata)
     df_monthly_average = average_per_month(df_stadata)
 
@@ -138,6 +136,13 @@ def main_display(df,df_event,df_stadata):
 
 def main():
     df,df_event,df_stadata = pickup_frame()
+    # "Gon-Patt+36nu"列を追加し、処理を行う
+    #df_stadata["Gon-Patt+36nu"] = pd.to_numeric(df_stadata["Gon-Patt+36"].str.replace(r'[^\d-]+', '', regex=True), errors='coerce') + 30
+    #df_stadata["Gon-Patt+36nu"] = pd.to_numeric(df_stadata["Gon-Patt+36"].str.replace(r'[^\d-]+', '', regex=True), errors='coerce').fillna(0) - 1 + 30
+    #df_stadata["Gon-Patt+36nu"] = pd.to_numeric(df_stadata["Gon-Patt+36"].str.extract(r'(\d+)').fillna(0), errors='coerce').astype(int) - 1 + 30
+    #df_stadata["Gon-Patt+36nu"] = df_stadata["Gon-Patt+36"].astype(int) + 30
+    df_stadata["Gon-Patt+36"] = pd.to_numeric(df_stadata["Gon-Patt+36"], errors='coerce').fillna(0).astype(int) + 30
+    #df_stadata
     sidebar_display(df,df_event,df_stadata)
     main_display(df,df_event,df_stadata)
     

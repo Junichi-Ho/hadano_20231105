@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import datetime
 import cf
 import plotly.graph_objects as go
+import matplotlib.image as mpimg
 
 #@st.cache_data
 #def green_image(holenum,pfile): #ホールごとのイメージの取り込み
@@ -204,47 +205,6 @@ def gauge_view(totalobnumbers,base,df_3patt,df_db_on):
     fig.update_layout(autosize=False, width=300, height=300)
     return fig
 
-def taihi():
-    labelPinPosition = " ％ / 数 "+labelCB 
-    if st.toggle(label=labelPinPosition):
-        #カウント表示
-        col1,col2,col3=st.columns((1,1,1))
-        with col1:
-            dbon = df_db_on.shape[0] - totalobnumbers
-            st.metric(label=f"{iconOB} TOB {OBnumbers} : 2OB {df_count2OB.shape[0]} : DBon-2OB {dbon}",value=totalobnumbers,delta=ref_OB)
-            
-        with col2:
-            pattave=df_holef["SN"].mean()
-            st.metric(
-                label=f"{icon_visible_green} NOT GOn _ 1st Patt Ave {pattave:.2f}",
-                value=df_holef.shape[0]-df_countGon.shape[0],delta=str(ref_paron))
-            
-        with col3:
-            label = f":man-facepalming: :field_hockey_stick_and_ball: :field_hockey_stick_and_ball: :field_hockey_stick_and_ball: :calendar:{lastdate_3}"
-            st.metric(label=label,value=df_3patt.shape[0],delta=str(ref_3patt))
-    else:
-        #アベレージ表示 （デフォルト）
-
-        col1,col2,col3=st.columns((1,1,1))
-        with col1:            
-            dbon = (df_db_on.shape[0] - totalobnumbers) /base *100
-            a = totalobnumbers/base*100
-            b = ref_OB/ref_num*100
-            st.metric(label=f"{iconOB} TOB {OBnumbers} : 2OB {df_count2OB.shape[0]}  __ DBon-2OB {dbon:.2f} %",value=f"{a:.1f}",delta=f"{b:.1f}")
-            
-        with col2:
-            a = (df_holef.shape[0]-df_countGon.shape[0]-totalobnumbers)/(base-totalobnumbers)*100
-            b = ref_paron/ref_num*100
-            pattave=df_holef["SN"].mean()
-            st.metric(
-                label=f"{icon_visible_green} NOT GOn _ 1st Patt Ave {pattave:.2f}",
-                value=f"{a:.1f}",delta=f"{b:.1f}")
-            
-        with col3:
-            a = df_3patt.shape[0]/base*100
-            b = ref_3patt/ref_num*100
-            label = f":man-facepalming: :field_hockey_stick_and_ball: :field_hockey_stick_and_ball: :field_hockey_stick_and_ball: :calendar:{lastdate_3}"
-            st.metric(label=label,value=f"{a:.1f}",delta=f"{b:.1f}")
 
 def main():
 
@@ -406,6 +366,11 @@ def main():
     with st.expander(f"Dataframe:ラウンド数は {str(df_holef.shape[0])} 回"):
         show_dataframe(hole,df_holef,df_countGon)
 
+
+
+
+
+
     # 5 # #多様な深堀のためのデータ提供
     tabdbs, tabITG, tabIHN ,tabPP, tabHist, tabOBs, tab3P, tabmeter = st.tabs(["DBon"," :man-golfing: "," :golf: "," :1234: "," :musical_score: ", " :ok_woman: ", " :field_hockey_stick_and_ball: ","meter"])
     with tabITG: #ホールイメージ TG00.png
@@ -480,6 +445,12 @@ def main():
             st.pyplot(fig2, use_container_width=True)
 
     with tabdbs:
+
+
+
+
+
+
         fig = gauge_view(totalobnumbers,base,df_3patt,df_db_on)
         # Streamlitでゲージチャートの表示
         st.plotly_chart(fig)
