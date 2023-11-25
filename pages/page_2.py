@@ -23,20 +23,31 @@ def pickup_frame():
     df = df[columns]
     df["Year"] = df["Year"].astype(int)
     df["Month"] = df["Month"].astype(int)
+    columns_to_convert = ["OB", "Penalty", "Total", "1st", "2nd","green","approach","Double Total",
+               "3 shot in 100","Total.1","Score.1"]
+
+    for column in columns_to_convert:
+        df[column] = pd.to_numeric(df[column], errors='coerce').fillna(0).astype(int)
+    df["Gon-Patt+36"] = pd.to_numeric(df["Gon-Patt+36"], errors='coerce').fillna(0).astype(int) + 30
+    rename_dict = {"Score.1": "Birdie","Total.1":"X","Gon-Patt+36":"Patt数"}
+    df.rename(columns=rename_dict, inplace=True)
     df_event = df[["Date","Year","Month","Event","OB","Score"]]
     df_stadata = df[["Year","Month","OB","Penalty","Total","Score",
-               "Out","In","Gon-Patt+36",
+               "Out","In","Patt数",
                "1st","2nd","green",
                "approach","Double Total",
-               "3 shot in 100","Total.1","Score.1"]]
+               "3 shot in 100","X","Birdie"]]
 
+    
     return (df,df_event,df_stadata)
 
+@st.cache_data
 def sidebar_display(df,df_event,df_stadata):
 
     df3 = df[['Score','OB',"Out","In"]]
     st.sidebar.table(df3.head(10))
 
+@st.cache_data
 def average_per_year(df_stadata):
     # 'Year' 列でグループ化し、各列の平均値を計算
     df_yearly_average = df_stadata.groupby('Year').mean()
@@ -44,6 +55,7 @@ def average_per_year(df_stadata):
     df_yearly_average["Count"]=df_grouped_size
     return df_yearly_average
 
+@st.cache_data
 def average_per_month(df_stadata):
     # 'Year' 列でグループ化し、各列の平均値を計算
     df_monthly_average = df_stadata.groupby('Month').mean()
@@ -51,7 +63,7 @@ def average_per_month(df_stadata):
     df_monthly_average["Count"]=df_grouped_size
     return df_monthly_average
 
-
+@st.cache_data
 def plot_distribution(df_stadata, selected_years, selected_score_type):
     # 選択された年のデータのみをフィルタリング
     df_filtered = df_stadata[df_stadata['Year'].isin(selected_years)]
@@ -76,23 +88,56 @@ def plot_distribution(df_stadata, selected_years, selected_score_type):
 
     st.pyplot(plt)
 
-#def plot_score_distribution(df_stadata):
-    # 'Year'と'Score'でグループ化し、各'Score'の出現頻度を計算
-#    df_grouped = df_stadata.groupby(['Year', 'Score']).size().unstack(fill_value=0)
+def plot_chart(kind,df_yearly_average):
+        # df_yearly_averageを使用して折れ線グラフを作成
+        plt.figure(figsize=(10, 5))
+        
+        if(kind=="Score"):
+            plt.plot(df_yearly_average.index, df_yearly_average['Score'])
+            plt.xlabel('Year')
+            plt.ylabel('Score')
+            plt.title('Yearly Average Score')
 
-    # 積み上げバーチャートを描画
-#    fig, ax = plt.subplots()
-#    bar = ax.bar(df_grouped.index, df_grouped.values, stacked=True)
+        elif(kind=="OutInPatt"):
+            # df_yearly_averageを使用して折れ線グラフを作成
+            plt.plot(df_yearly_average.index, df_yearly_average['In'], label='In')
+            plt.plot(df_yearly_average.index, df_yearly_average['Out'], label='Out')
+            plt.plot(df_yearly_average.index, df_yearly_average['Patt数'], label='Patt数')
+            plt.xlabel('Year')
+            plt.ylabel('Value')
+            plt.title('Yearly Average Values')
+            plt.legend()
 
-    # 各バーの色をグラデーションにする
-#    for i in range(len(bar)):
-#        bar[i].set_color(mcolors.CSS4_COLORS[list(mcolors.CSS4_COLORS.keys())[i]])
+        elif(kind=="Xx"):
+            # df_yearly_averageを使用して折れ線グラフを作成
+            plt.plot(df_yearly_average.index, df_yearly_average['OB'], label='OB')
+            plt.plot(df_yearly_average.index, df_yearly_average['Penalty'], label='Penalty')
+            plt.xlabel('Year')
+            plt.ylabel('Value')
+            plt.title('Yearly Average Values')
+            plt.legend()
 
-#    plt.title('Yearly Distribution of Score')
-#    plt.xlabel('Year')
-#    plt.ylabel('Frequency')
+        elif(kind=="Bvs3100"):
+            # df_yearly_averageを使用して折れ線グラフを作成
+            plt.plot(df_yearly_average.index, df_yearly_average['3 shot in 100'], label='3 shot in 100')
+            plt.plot(df_yearly_average.index, df_yearly_average['Birdie'], label='Birdie')
+            plt.xlabel('Year')
+            plt.ylabel('Value')
+            plt.title('Yearly Average Values')
+            plt.legend()
 
-#    st.pyplot(fig)
+        else:
+            # df_yearly_averageを使用して折れ線グラフを作成
+            plt.plot(df_yearly_average.index, df_yearly_average['1st'], label='DB Factor 1st')
+            plt.plot(df_yearly_average.index, df_yearly_average['2nd'], label='DB Factor 2nd')
+            plt.plot(df_yearly_average.index, df_yearly_average['green'], label='DB Factor GIR')
+            plt.plot(df_yearly_average.index, df_yearly_average['approach'], label='DB Factor around green')
+            plt.xlabel('Year')
+            plt.ylabel('Value')
+            plt.title('Yearly Average Values')
+            plt.legend()       
+
+        return(plt)
 
 def main_display(df,df_event,df_stadata):
     df_yearly_average = average_per_year(df_stadata)
@@ -128,25 +173,34 @@ def main_display(df,df_event,df_stadata):
     
     with DT_year: #st.expander(f"年ごとの集計"):
         st.dataframe(df_yearly_average.style.background_gradient(cmap="Oranges"))
+        # df_yearly_averageを使用して折れ線グラフを作成
+        Score,OutInPatt,Xx, DBFa, Bvs3100 =st.tabs(["Score","OutInPatt","OBHazard","DB factor","Birdie"])
+        with Score:
+            st.write("Score")
+            st.pyplot(plot_chart("Score",df_yearly_average))
+        with OutInPatt:
+            st.write("OutInPatt")
+            st.pyplot(plot_chart("OutInPatt",df_yearly_average))
+        with Xx:
+            st.write("OBHazard")
+            st.pyplot(plot_chart("Xx",df_yearly_average))
+        with DBFa:
+            st.write("DB factor")
+            st.pyplot(plot_chart("DBF",df_yearly_average))
+        with Bvs3100:
+            st.write("Birdie vs 3shotin100")
+            st.pyplot(plot_chart("Bvs3100",df_yearly_average))
+
+
 
     with DT_month: #st.expander(f"月ごとの集計"):
         st.dataframe(df_monthly_average.style.highlight_max(axis=0))
 
-
-
 def main():
     df,df_event,df_stadata = pickup_frame()
-    # "Gon-Patt+36nu"列を追加し、処理を行う
-    #df_stadata["Gon-Patt+36nu"] = pd.to_numeric(df_stadata["Gon-Patt+36"].str.replace(r'[^\d-]+', '', regex=True), errors='coerce') + 30
-    #df_stadata["Gon-Patt+36nu"] = pd.to_numeric(df_stadata["Gon-Patt+36"].str.replace(r'[^\d-]+', '', regex=True), errors='coerce').fillna(0) - 1 + 30
-    #df_stadata["Gon-Patt+36nu"] = pd.to_numeric(df_stadata["Gon-Patt+36"].str.extract(r'(\d+)').fillna(0), errors='coerce').astype(int) - 1 + 30
-    #df_stadata["Gon-Patt+36nu"] = df_stadata["Gon-Patt+36"].astype(int) + 30
-    df_stadata["Gon-Patt+36"] = pd.to_numeric(df_stadata["Gon-Patt+36"], errors='coerce').fillna(0).astype(int) + 30
-    #df_stadata
     sidebar_display(df,df_event,df_stadata)
     main_display(df,df_event,df_stadata)
     
-
 
 if __name__ == "__main__":
     main()
