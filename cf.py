@@ -24,6 +24,12 @@ def main_dataframe(csvfile): # Main Dataframe CSVファイルの読み込み
 
     df["Date"]= df["Date"].dt.strftime("%y.%m.%d")
     #df = df.set_index("Date")
+    #整数化
+    columns_to_convert = ["OB", "Penalty", "Total", "1st", "2nd","green","approach","Double Total",
+               "3 shot in 100","Total.1","Score.1"]
+    for column in columns_to_convert:
+        df[column] = pd.to_numeric(df[column], errors='coerce').fillna(0).astype(int)
+
     return df
 
 

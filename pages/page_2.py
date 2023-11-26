@@ -23,11 +23,13 @@ def pickup_frame():
     df = df[columns]
     df["Year"] = df["Year"].astype(int)
     df["Month"] = df["Month"].astype(int)
-    columns_to_convert = ["OB", "Penalty", "Total", "1st", "2nd","green","approach","Double Total",
-               "3 shot in 100","Total.1","Score.1"]
 
-    for column in columns_to_convert:
-        df[column] = pd.to_numeric(df[column], errors='coerce').fillna(0).astype(int)
+    #整数化
+    #columns_to_convert = ["OB", "Penalty", "Total", "1st", "2nd","green","approach","Double Total",
+    #           "3 shot in 100","Total.1","Score.1"]
+    #for column in columns_to_convert:
+    #    df[column] = pd.to_numeric(df[column], errors='coerce').fillna(0).astype(int)
+
     df["Gon-Patt+36"] = pd.to_numeric(df["Gon-Patt+36"], errors='coerce').fillna(0).astype(int) + 30
     rename_dict = {"Score.1": "Birdie","Total.1":"X","Gon-Patt+36":"Patt数"}
     df.rename(columns=rename_dict, inplace=True)

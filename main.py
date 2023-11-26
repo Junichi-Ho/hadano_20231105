@@ -57,6 +57,11 @@ def dataframe_by_hole(df,hole): # ホールごとのデータフレームの作�
     rename_dict = {Teeing:"T",T_result:"TR",GIR:"G",GIR_result:"GR",Haz:"Comment",PP:"PP",SN:"SN",PN:"PN",PH:"PH","Year":"y","Month":"m"}
     df_hole = df_hole.copy()
     df_hole.rename(columns=rename_dict,inplace=True)
+    #整数化
+    columns_to_convert = ["PP", "PN", "PH"]
+    for column in columns_to_convert:
+        df_hole[column] = pd.to_numeric(df_hole[column], errors='coerce').fillna(0).astype(int)
+
     return df_hole
 
 @st.cache_data
@@ -80,7 +85,7 @@ def generate_sub_dataframe(hole,df_holef): #OB x2 、GIR Dataframe、Dateを作�
     if OBnumbers == 0:
         lastdateOB = "なし"
     else:
-        lastdateOB = countTOB.iat[0,11]
+        lastdateOB = countTOB.iat[0,12]
     #3つのDataframe,2つのデータ
     #1st OBのデータフレーム、2nd OBのデータフレーム、GIRのGonのデータフレーム,OB数と最後のOBになった日付データ
     return(countTOB,count2OB,countGon,OBnumbers,lastdateOB)
@@ -215,7 +220,7 @@ def main():
     ### Start 基本データフレームの作成
     st.set_page_config(layout="wide")
     df = cf.main_dataframe("20231104_HatanoScore.csv")
-    
+
     #######################
     # サイドバー表示       #
     #　sidebarを加える    #
@@ -374,7 +379,7 @@ def main():
 
 
     # 5 # #多様な深堀のためのデータ提供
-    tabdbs, tabITG, tabIHN ,tabPP, tabHist, tabOBs, tab3P, tabmeter = st.tabs(["DBon"," :man-golfing: "," :golf: "," :1234: "," :musical_score: ", " :ok_woman: ", " :field_hockey_stick_and_ball: ","meter"])
+    tabITG, tabIHN ,tabPP, tabHist, tabOBs, tab3P, tabdbs, tabmeter = st.tabs([" :man-golfing: "," :golf: "," :1234: "," :musical_score: ", " :ok_woman: ", " :field_hockey_stick_and_ball: ","DBon","meter"])
     with tabITG: #ホールイメージ TG00.png
         image = cf.green_image(str(hole),"TG")[0]
         caption = cf.green_image(str(hole),"TG")[1]
@@ -384,6 +389,24 @@ def main():
         image = cf.green_image(str(hole),"HN")[0]
         caption = cf.green_image(str(hole),"HN")[1]
         st.image(image,caption=caption) 
+        club_list = list(df_holef["G"].unique())
+        # "T"の要素別に頻度ヒストグラムを作成
+        fig, ax = plt.subplots(figsize=(6, 4))
+        for club in club_list:
+            data = df_holef[df_holef["G"] == club][str(hole)]
+            ax.hist(data, bins=15, alpha=0.5, label=club)
+        ax.legend()
+        st.pyplot(fig, use_container_width=False)
+
+
+        select_club = st.selectbox("Club選択",club_list)
+        df_temp_bante = df_holef[df_holef["G"].isin([select_club])]
+        fig3, ax3 = plt.subplots(figsize=(3,3))
+        ax3.hist(df_temp_bante[str(hole)],bins=15,color="red")
+        st.pyplot(fig3, use_container_width=False)
+        df_temp_bante
+
+
 
     with tabPP: #PinポジでFilterするオプション　#Streamlitのマルチセレクト
         PP_list = list(df_holef["PP"].unique())
@@ -409,6 +432,7 @@ def main():
             df_areac = df_holef[[str(hole),"PN"]]
             st.line_chart(df_areac)
         with subtab2:
+            st.write("DB On以上にフィルター")
             st.dataframe(df_ODB.style.background_gradient(cmap="Blues"),hide_index=True)
 
     with tabOBs:# OBの深堀 
@@ -447,21 +471,28 @@ def main():
             st.pyplot(fig2, use_container_width=True)
 
     with tabdbs:
-
-
-
-
-
-
         fig = gauge_view(totalobnumbers,base,df_3patt,df_db_on)
         # Streamlitでゲージチャートの表示
         st.plotly_chart(fig)
         df_db_on
 
     with tabmeter:
-        fig = gauge_view(totalobnumbers,base,df_3patt,df_db_on)
-        # Streamlitでゲージチャートの表示
-        st.plotly_chart(fig)
+        club_list = list(df_holef["T"].unique())
+        # "T"の要素別に頻度ヒストグラムを作成
+        fig, ax = plt.subplots(figsize=(6, 4))
+        for club in club_list:
+            data = df_holef[df_holef["T"] == club][str(hole)]
+            ax.hist(data, bins=15, alpha=0.5, label=club)
+        ax.legend()
+        st.pyplot(fig, use_container_width=False)
+
+
+        select_club = st.selectbox("Club選択",club_list)
+        df_temp_bante = df_holef[df_holef["T"].isin([select_club])]
+        fig3, ax3 = plt.subplots(figsize=(3,3))
+        ax3.hist(df_temp_bante[str(hole)],bins=15,color="red")
+        st.pyplot(fig3, use_container_width=False)
+        df_temp_bante
 
     ################ メモ 不採用ログ 過去ログ###############################################
     #df_holef.dtypes
