@@ -212,11 +212,25 @@ def gauge_view(totalobnumbers,base,df_3patt,df_db_on):
     fig.update_layout(paper_bgcolor = "white", font = {'color': "darkblue", 'family': "Arial"})
     return fig
 
+@st.cache_data
+def ref_GIR_iron(df_holef,hole):
+    # "Comment"列からr-yard:が含まれる要素を抜き取り、数値に変換して"残りヤード"列に追加
+    df_holef["残りヤード"] = df_holef["Comment"].str.extract(r'r-yard:\s*(\d+)').astype(float)
+
+    # 指定の列を含むデータフレームを作成
+    df_holef_temp = df_holef[df_holef["残りヤード"].notnull()]
+    # 残りヤードを整数型に変換
+    df_holef_temp["残りヤード"] = df_holef_temp["残りヤード"].astype(int)
+    df_holef_temp = df_holef_temp[["残りヤード","G","GR","SN","PN",str(hole),"TR","PP","Date"]]
+    df_holef_temp = df_holef_temp.sort_values(by="残りヤード", ascending=False)
+    df_holef_temp_GO = df_holef_temp[df_holef_temp["GR"] == "GO"]
+    df_holef_temp_GO["SN"] = df_holef_temp_GO["SN"].astype(int)
+    return df_holef_temp_GO
 
 def main():
 
     #ここからメイン
-
+    
     ### Start 基本データフレームの作成
     st.set_page_config(layout="wide")
     df = cf.main_dataframe("20231104_HatanoScore.csv")
@@ -381,9 +395,15 @@ def main():
     # 5 # #多様な深堀のためのデータ提供
     tabITG, tabIHN ,tabPP, tabHist, tabOBs, tab3P, tabdbs, tabmeter = st.tabs([" :man-golfing: "," :golf: "," :1234: "," :musical_score: ", " :ok_woman: ", " :field_hockey_stick_and_ball: ","DBon","meter"])
     with tabITG: #ホールイメージ TG00.png
+        #reference GIRで使用する アイアンの過去良い軌跡
+        df_holef_temp_GO = ref_GIR_iron(df_holef,hole)
+        st.dataframe(df_holef_temp_GO[["残りヤード","G","SN","PN",str(hole),"TR","PP","Date"]].style.background_gradient(cmap="Blues"),hide_index=True)
+
+
         image = cf.green_image(str(hole),"TG")[0]
         caption = cf.green_image(str(hole),"TG")[1]
         st.image(image,caption=caption)
+
 
     with tabIHN: #グリーンイメージ HN00.png
         image = cf.green_image(str(hole),"HN")[0]
