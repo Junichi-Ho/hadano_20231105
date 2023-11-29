@@ -24,6 +24,7 @@ def main_dataframe(csvfile): # Main Dataframe CSVファイルの読み込み
 
     df["Date"]= df["Date"].dt.strftime("%y.%m.%d")
     #df = df.set_index("Date")
+    
     #整数化
     columns_to_convert = ["OB", "Penalty", "Total", "1st", "2nd","green","approach","Double Total",
                "3 shot in 100","Total.1","Score.1"]
@@ -32,6 +33,40 @@ def main_dataframe(csvfile): # Main Dataframe CSVファイルの読み込み
 
     return df
 
+@st.cache_data
+def dataframe_by_hole(df,hole): # ホールごとのデータフレームの作成
+    #ホールごとの左のデータを成型する。 str(hole),"Teeing番手","結果","GIR番手","結果.1","Hazard","Pin位置","歩数","Patt数","Patt数.1"
+    #ホールごとのデータフレーム df_holeの整形
+    if hole > 1 :
+        Teeing = "Teeing番手" + "." + str(hole-1)
+        T_result = "結果" + "." + str((hole-1)*2)
+        GIR = "GIR番手" + "." + str(hole-1)
+        GIR_result = "結果" + "." + str((hole-1)*2+1)
+        Haz = "Hazard" + "." + str(hole-1)
+        PP = "Pin位置" + "." + str(hole-1)
+        SN = "歩数" + "." + str(hole-1)
+        PN = "Patt数" + "." + str((hole-1)*2)
+        PH = "Patt数" + "." + str((hole-1)*2+1)
+    else:
+        Teeing = "Teeing番手"
+        T_result = "結果"
+        GIR = "GIR番手"
+        GIR_result = "結果" + ".1" 
+        Haz = "Hazard"
+        PP = "Pin位置"
+        SN = "歩数"
+        PN = "Patt数"
+        PH = "Patt数" + ".1"
+    df_hole = df[[str(hole),Teeing,T_result,GIR,GIR_result,Haz,PP,SN,PN,PH,"Year","Month","Date"]]
+    rename_dict = {Teeing:"T",T_result:"TR",GIR:"G",GIR_result:"GR",Haz:"Comment",PP:"PP",SN:"SN",PN:"PN",PH:"PH","Year":"y","Month":"m"}
+    df_hole = df_hole.copy()
+    df_hole.rename(columns=rename_dict,inplace=True)
+    #整数化
+    columns_to_convert = ["PP", "PN", "PH"]
+    for column in columns_to_convert:
+        df_hole[column] = pd.to_numeric(df_hole[column], errors='coerce').fillna(0).astype(int)
+
+    return df_hole
 
 def main():
     st.write("this is function file for streamlit project")

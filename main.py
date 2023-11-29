@@ -8,61 +8,8 @@ import cf
 import plotly.graph_objects as go
 import matplotlib.image as mpimg
 
-#@st.cache_data
-#def green_image(holenum,pfile): #ホールごとのイメージの取り込み
-#    im = "./pict/"+ pfile +("0"+holenum)[-2:]+".png"
-#    #st.sidebar.write(im)
-#    image = Image.open(im)
-#    caption = im[-6:-4]
-#    return image,caption
 
-@st.cache_data 
-def main_dataframe(csvfile): # Main Dataframe CSVファイルの読み込み
-    # Index ＝ Dateに。Dateは時間をとりたいがわからない。
-    df = pd.read_csv(csvfile)
-    df["Date"]=pd.to_datetime(df["Date"], format="mixed")
 
-    df["Year"] = df["Date"].apply(lambda x : x.strftime("%y"))
-    df["Month"] = df["Date"].apply(lambda x : x.strftime("%m"))
-
-    df["Date"]= df["Date"].dt.strftime("%y.%m.%d")
-    #df = df.set_index("Date")
-    return df
-
-@st.cache_data
-def dataframe_by_hole(df,hole): # ホールごとのデータフレームの作成
-    #ホールごとの左のデータを成型する。 str(hole),"Teeing番手","結果","GIR番手","結果.1","Hazard","Pin位置","歩数","Patt数","Patt数.1"
-    #ホールごとのデータフレーム df_holeの整形
-    if hole > 1 :
-        Teeing = "Teeing番手" + "." + str(hole-1)
-        T_result = "結果" + "." + str((hole-1)*2)
-        GIR = "GIR番手" + "." + str(hole-1)
-        GIR_result = "結果" + "." + str((hole-1)*2+1)
-        Haz = "Hazard" + "." + str(hole-1)
-        PP = "Pin位置" + "." + str(hole-1)
-        SN = "歩数" + "." + str(hole-1)
-        PN = "Patt数" + "." + str((hole-1)*2)
-        PH = "Patt数" + "." + str((hole-1)*2+1)
-    else:
-        Teeing = "Teeing番手"
-        T_result = "結果"
-        GIR = "GIR番手"
-        GIR_result = "結果" + ".1" 
-        Haz = "Hazard"
-        PP = "Pin位置"
-        SN = "歩数"
-        PN = "Patt数"
-        PH = "Patt数" + ".1"
-    df_hole = df[[str(hole),Teeing,T_result,GIR,GIR_result,Haz,PP,SN,PN,PH,"Year","Month","Date"]]
-    rename_dict = {Teeing:"T",T_result:"TR",GIR:"G",GIR_result:"GR",Haz:"Comment",PP:"PP",SN:"SN",PN:"PN",PH:"PH","Year":"y","Month":"m"}
-    df_hole = df_hole.copy()
-    df_hole.rename(columns=rename_dict,inplace=True)
-    #整数化
-    columns_to_convert = ["PP", "PN", "PH"]
-    for column in columns_to_convert:
-        df_hole[column] = pd.to_numeric(df_hole[column], errors='coerce').fillna(0).astype(int)
-
-    return df_hole
 
 @st.cache_data
 def generate_sub_dataframe(hole,df_holef): #OB x2 、GIR Dataframe、Dateを作成
@@ -227,6 +174,29 @@ def ref_GIR_iron(df_holef,hole):
     df_holef_temp_GO["SN"] = df_holef_temp_GO["SN"].astype(int)
     return df_holef_temp_GO
 
+@st.cache_data
+def plot_teeing_club(df_holef,hole):
+    club_list = list(df_holef["T"].unique())
+    # "T"の要素別に頻度ヒストグラムを作成
+    fig, ax = plt.subplots(figsize=(3, 3))
+    for club in club_list:
+        data = df_holef[df_holef["T"] == club][str(hole)]
+        ax.hist(data, bins=15, alpha=0.5, label=club)
+    ax.legend()
+
+    return(club_list,fig)
+
+@st.cache_data
+def plot_teeing_club2(select_club,df_holef,hole): 
+    # 選択されたTの要素=クラブのScoreヒストグラムを作成
+    df_temp_bante = df_holef[df_holef["T"].isin([select_club])]
+    fig3, ax3 = plt.subplots(figsize=(3,3))
+    ax3.hist(df_temp_bante[str(hole)],bins=15,color="red")
+
+    return(df_temp_bante,fig3)
+
+
+
 def main():
 
     #ここからメイン
@@ -260,7 +230,7 @@ def main():
         hole = st.sidebar.radio("In = Par5_14,18",(10,11,12,13,14,15,16,17,18), horizontal=True)
 
     #holeに関する情報にスライスし、データフレーム作成する。
-    df_h = dataframe_by_hole(df,hole)
+    df_h = cf.dataframe_by_hole(df,hole)
 
     #年でFilterするオプション#Streamlitのマルチセレクト
     year_list = list(df_h["y"].unique())
@@ -411,7 +381,7 @@ def main():
         st.image(image,caption=caption) 
         club_list = list(df_holef["G"].unique())
         # "T"の要素別に頻度ヒストグラムを作成
-        fig, ax = plt.subplots(figsize=(6, 4))
+        fig, ax = plt.subplots(figsize=(3, 3))
         for club in club_list:
             data = df_holef[df_holef["G"] == club][str(hole)]
             ax.hist(data, bins=15, alpha=0.5, label=club)
@@ -497,22 +467,13 @@ def main():
         df_db_on
 
     with tabmeter:
-        club_list = list(df_holef["T"].unique())
-        # "T"の要素別に頻度ヒストグラムを作成
-        fig, ax = plt.subplots(figsize=(6, 4))
-        for club in club_list:
-            data = df_holef[df_holef["T"] == club][str(hole)]
-            ax.hist(data, bins=15, alpha=0.5, label=club)
-        ax.legend()
+        club_list,fig = plot_teeing_club(df_holef,hole)
         st.pyplot(fig, use_container_width=False)
 
-
         select_club = st.selectbox("Club選択",club_list)
-        df_temp_bante = df_holef[df_holef["T"].isin([select_club])]
-        fig3, ax3 = plt.subplots(figsize=(3,3))
-        ax3.hist(df_temp_bante[str(hole)],bins=15,color="red")
+        df_temp_bante,fig3 = plot_teeing_club2(select_club,df_holef,hole)
         st.pyplot(fig3, use_container_width=False)
-        df_temp_bante
+        st.dataframe(df_temp_bante)
 
     ################ メモ 不採用ログ 過去ログ###############################################
     #df_holef.dtypes
