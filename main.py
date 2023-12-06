@@ -8,9 +8,6 @@ import cf
 import plotly.graph_objects as go
 import matplotlib.image as mpimg
 
-
-
-
 @st.cache_data
 def generate_sub_dataframe(hole,df_holef): #OB x2 、GIR Dataframe、Dateを作成
     #3つのDataframe,2つのデータ
@@ -64,7 +61,6 @@ def generate_sub_dataframe_ODB(hole,df_holef):#DoubleBoggy以上
 
     #overDBのデータフレーム、最後にたたいたダボの日付, OBのアイコン(Par3の場合1stOBないから)、ParNumberアイコン 
     return(temp_hole,df_db_on,lastdate,iconOB,iconp)
-
 
 @st.cache_data
 def generate_sub_dataframe_HP(hole,df_holef):# Holeの位置高さと3pattのデータフレームの作成
@@ -195,15 +191,29 @@ def plot_teeing_club2(select_club,df_holef,hole):
 
     return(df_temp_bante,fig3)
 
-
-
 def main():
 
     #ここからメイン
     
     ### Start 基本データフレームの作成
     st.set_page_config(layout="wide")
+
     df = cf.main_dataframe("20231104_HatanoScore.csv")
+
+    #イン アウト選択により絞り込む （前中後にしたいが）
+    out_in = st.radio("Out / In",("Out","In"), horizontal=True)
+    if out_in == "Out" :
+        #hole = st.sidebar.selectbox(
+        #"Hole",[1,2,3,4,5,6,7,8,9]
+        #)
+        hole = st.radio("Out = Par5_6, 8",(1,2,3,4,5,6,7,8,9), horizontal=True)
+    else:
+        hole = st.radio("In = Par5_14,18",(10,11,12,13,14,15,16,17,18), horizontal=True)
+
+    #holeに関する情報にスライスし、データフレーム作成する。
+    df_h = cf.dataframe_by_hole(df,hole)
+
+
 
     #######################
     # サイドバー表示       #
@@ -217,20 +227,6 @@ def main():
         df3 = df[['Score','OB',"Out","In"]]
         st.sidebar.table(df3.head(10))
 
-    
-
-    #イン アウト選択により絞り込む （前中後にしたいが）
-    out_in = st.sidebar.radio("Out / In",("Out","In"), horizontal=True)
-    if out_in == "Out" :
-        #hole = st.sidebar.selectbox(
-        #"Hole",[1,2,3,4,5,6,7,8,9]
-        #)
-        hole = st.sidebar.radio("Out = Par5_6, 8",(1,2,3,4,5,6,7,8,9), horizontal=True)
-    else:
-        hole = st.sidebar.radio("In = Par5_14,18",(10,11,12,13,14,15,16,17,18), horizontal=True)
-
-    #holeに関する情報にスライスし、データフレーム作成する。
-    df_h = cf.dataframe_by_hole(df,hole)
 
     #年でFilterするオプション#Streamlitのマルチセレクト
     year_list = list(df_h["y"].unique())
@@ -474,24 +470,6 @@ def main():
         df_temp_bante,fig3 = plot_teeing_club2(select_club,df_holef,hole)
         st.pyplot(fig3, use_container_width=False)
         st.dataframe(df_temp_bante)
-
-    ################ メモ 不採用ログ 過去ログ###############################################
-    #df_holef.dtypes
-    #df_holeS = df_holef[[PN,SN,str(hole)]]
-    #df_holeS
-    #st.scatter_chart(data = df_holeS,x=SN,y=PN,color=str(hole))
-    #st.bar_chart(df_holeS,x=PN,y=SN)
-
-    #if st.checkbox(label=labelCB):
-        ##Ｇｒｅｅｎの画像表示
-    #    image = green_image(str(hole),"HN")[0]
-    #    caption = green_image(str(hole),"HN")[1]
-    #    st.image(image,caption=caption)
-    #    st.snow()
-
-    # 5 # #PP別 データ提供
-    #labelPinPosition = " PP別 解析_" + labelCB 
-    #if st.toggle(label=labelPinPosition):
 
 
 if __name__ == "__main__":
