@@ -14,9 +14,9 @@ def green_image(holenum,pfile): #ホールごとのイメージの取り込み
     return image,caption
 
 @st.cache_data 
-def main_dataframe(csvfile): # Main Dataframe CSVファイルの読み込み
+def main_dataframe(): # Main Dataframe CSVファイルの読み込み
     # Index ＝ Dateに。Dateは時間をとりたいがわからない。
-    df = pd.read_csv(csvfile)
+    df = pd.read_csv("20231104_HatanoScore.csv")
     df["Date"]=pd.to_datetime(df["Date"], format="mixed")
 
     df["Year"] = df["Date"].apply(lambda x : x.strftime("%y"))

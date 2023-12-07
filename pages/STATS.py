@@ -10,7 +10,7 @@ import cf  # 上位フォルダにあるモジュールをインポート
 
 @st.cache_data
 def pickup_frame():
-    df = cf.main_dataframe("20231104_HatanoScore.csv")
+    df = cf.main_dataframe()
     df = df.copy()
     columns = ["Date","Year","Month",
                "Event","OB",

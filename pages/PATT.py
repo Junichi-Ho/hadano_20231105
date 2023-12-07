@@ -13,7 +13,7 @@ import cf  # 上位フォルダにあるモジュールをインポート
 
 @st.cache_data
 def create_dataframe_from():
-    df = cf.main_dataframe("20231104_HatanoScore.csv")
+    df = cf.main_dataframe()
     # 空のリストを作成
     dfs = []
 

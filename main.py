@@ -191,43 +191,24 @@ def plot_teeing_club2(select_club,df_holef,hole):
 
     return(df_temp_bante,fig3)
 
-def main():
-
-    #ここからメイン
-    
-    ### Start 基本データフレームの作成
-    st.set_page_config(layout="wide")
-
-    df = cf.main_dataframe("20231104_HatanoScore.csv")
-
-    #イン アウト選択により絞り込む （前中後にしたいが）
+def hole_selection():
+    #イン アウト選択により絞り込む 
     out_in = st.radio("Out / In",("Out","In"), horizontal=True)
     if out_in == "Out" :
         #hole = st.sidebar.selectbox(
         #"Hole",[1,2,3,4,5,6,7,8,9]
         #)
-        hole = st.radio("Out = Par5_6, 8",(1,2,3,4,5,6,7,8,9), horizontal=True)
+        hole = st.radio("Par5 >> 6, 8",(1,2,3,4,5,6,7,8,9), horizontal=True)
     else:
-        hole = st.radio("In = Par5_14,18",(10,11,12,13,14,15,16,17,18), horizontal=True)
+        hole = st.radio("Par5 >> 14,18",(10,11,12,13,14,15,16,17,18), horizontal=True)
+    return hole
 
-    #holeに関する情報にスライスし、データフレーム作成する。
-    df_h = cf.dataframe_by_hole(df,hole)
-
-
-
-    #######################
-    # サイドバー表示       #
-    #　sidebarを加える    #
-    ######################
-    #df_h = ホールにフィルター
-    #df_holef = 年 月 PinPosition で Filterしたもの 
-    ######################
-    #最近のスコア表示
+def the_latest_record(df):
     if st.sidebar.checkbox("最近のスコア表示"):
         df3 = df[['Score','OB',"Out","In"]]
         st.sidebar.table(df3.head(10))
 
-
+def selection_in_sidebar(df_h):
     #年でFilterするオプション#Streamlitのマルチセレクト
     year_list = list(df_h["y"].unique())
     default_list = ["23","22"]
@@ -248,27 +229,39 @@ def main():
     month_list = list(df_h["m"].unique())
     select_month = st.sidebar.multiselect("月でFilterling",month_list,default=month_list)
     df_holef = df_holef[(df_holef["m"].isin(select_month))]
+    return df_holef
 
-    ####
-    #hole =ホール integer
+
+def main():
+    ### Start 基本データフレームの作成
+    st.set_page_config(layout="wide")
+    
+    df = cf.main_dataframe()             #csvからデータフレームに取り込み
+    hole = hole_selection()              #選択するホール番号
+    df_h = cf.dataframe_by_hole(df,hole) #holeに関する情報にスライスし、データフレーム作成する。
+
+    #######################
+    # サイドバー表示       #
+    #　sidebarを加える    #
+    ######################
     #df_h = ホールにフィルター
     #df_holef = 年 月 PinPosition で Filterしたもの 
-    #####
+    ######################
+    #最近のスコア表示
+    if(0): #function disabled
+        the_latest_record(df)
 
-    ###
-    ###ここから メイン表示
-    ###
-    ###
+    #年や月でフィルタリングする。
+    df_holef = selection_in_sidebar(df_h) #df_holef = 年 月 PinPosition で Filterしたもの 
 
-    ##
-
+    #############################
+    ###ここから Subdataframeの生成
+    #dataframeは 変数名に 必ず "df_" を加えることとする。
+    #############################
     #1st OBのデータフレーム、2nd OBのデータフレーム、GIRのGonのデータフレーム,OB数と最後のOBになった日付データ
     df_countTOB,df_count2OB,df_countGon,OBnumbers,lastdateOB = generate_sub_dataframe(hole,df_holef)
-    #dataframeは後でわかるようにdf_に変えること
-
     #overDBのデータフレーム、ダボオン以上 、最後にたたいたダボの日付, OBのアイコン(Par3の場合1stOBないから)、ParNumberアイコン
     df_ODB,df_db_on,lastdate,iconOB,iconp = generate_sub_dataframe_ODB(hole,df_holef)
-
     #グリーンが上にありピンが見えないホールなのかアイコン化する。
     icon_visible_green,df_3patt,lastdate_3 = generate_sub_dataframe_HP(hole,df_holef)
 
@@ -281,7 +274,7 @@ def main():
     ### 表示       ####
     ###################
     # 1  # タイトルは、In/OUT Hole Number、回数 打数アベレージを記載
-    bun_title = f"{out_in}{str(hole)}  :golfer: {df_holef.shape[0]} {iconp} {df_holef[str(hole)].mean():.3f} "
+    bun_title = f"No.{str(hole)}  :golfer: {df_holef.shape[0]} {iconp} {df_holef[str(hole)].mean():.3f} "
     st.subheader(bun_title)
 
     # 2  # メトリクス       
@@ -298,8 +291,9 @@ def main():
     meterG, percentageS, numberS = st.tabs([labelCB,":deer: ％",":deer: 数"])
     with meterG:
         # Streamlitでゲージチャートの表示
-        fig = gauge_view(totalobnumbers,base,df_3patt,df_db_on)
-        st.plotly_chart(fig)
+        if(1): #function enabled/disabled option
+            fig = gauge_view(totalobnumbers,base,df_3patt,df_db_on)
+            st.plotly_chart(fig)
 
     with percentageS:
        #アベレージ表示 （デフォルト）
@@ -343,19 +337,17 @@ def main():
 
     # 3  # スコアのヒストグラム表示 
     with st.expander(f"Score_hist.: :skull: DB以上 {lastdate}"):
-        #グラフ設定 matplotlib
-        fig, ax = plt.subplots()
-        #ヒストグラム
-        ax.hist(df_holef[str(hole)],bins=10,)
-        st.pyplot(fig, use_container_width=True)
+        if(0): #function enabled/disabled option
+            #グラフ設定 matplotlib
+            fig, ax = plt.subplots()
+            #ヒストグラム
+            ax.hist(df_holef[str(hole)],bins=10,)
+            st.pyplot(fig, use_container_width=True)
 
     # 4 # データフレーム表示
     with st.expander(f"Dataframe:ラウンド数は {str(df_holef.shape[0])} 回"):
-        show_dataframe(hole,df_holef,df_countGon)
-
-
-
-
+        if(0): #function enabled/disabled option
+            show_dataframe(hole,df_holef,df_countGon)
 
 
     # 5 # #多様な深堀のためのデータ提供
