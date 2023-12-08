@@ -3,10 +3,12 @@ import numpy as np
 import pandas as pd
 from PIL import Image
 import matplotlib.pyplot as plt
-import datetime
+from datetime import datetime, timedelta
 import cf
 import plotly.graph_objects as go
 import matplotlib.image as mpimg
+
+st.set_page_config(layout="wide")
 
 @st.cache_data
 def generate_sub_dataframe(hole,df_holef): #OB x2 、GIR Dataframe、Dateを作成
@@ -352,12 +354,36 @@ def detail_options(df_holef,hole,df_ODB,lastdateOB,OBnumbers,df_count2OB,df_coun
 
 
 def main():
+
+    #プログレスバー
+    progress_bar = st.progress(0)
+
+    # カスタムフォーマットとオプションを持つ日付時刻スライダーを作成する
+    start_date = datetime(2023, 1, 1)
+    end_date = start_date + timedelta(weeks=52)
+    
+    selected_date = st.slider(
+        "日付範囲を選択してください",
+        min_value=start_date,
+        max_value=end_date,
+        value=(start_date, end_date),
+        step=timedelta(days=32),
+        format="MM/YY",
+        #options=["日", "週", "月", "年"],
+    )
+    
+    selected_date
+
+    progress_bar.progress(10)
+
     ### Start 基本データフレームの作成
-    st.set_page_config(layout="wide")
+    
     
     df = cf.main_dataframe()             #csvからデータフレームに取り込み
     hole = hole_selection()              #選択するホール番号
     df_h = cf.dataframe_by_hole(df,hole) #holeに関する情報にスライスし、データフレーム作成する。
+
+    progress_bar.progress(20)
 
     #######################
     # サイドバー表示       #
@@ -371,6 +397,8 @@ def main():
 
     #年や月でフィルタリングする。
     df_holef = selection_in_sidebar(df_h) #df_holef = 年 月 PinPosition で Filterしたもの 
+
+    progress_bar.progress(30)
 
     #############################
     ###ここから Subdataframeの生成
@@ -387,6 +415,9 @@ def main():
     #GONしなかった数 3パットの数
     this_year = 23 #比較する年を記載する 2023年
     ref_num,ref_OB,ref_paron,ref_3patt = reference_dataframe(df_h,this_year,hole)
+
+    progress_bar.progress(40)
+
 
     ###################
     ### 表示       ####
@@ -405,6 +436,8 @@ def main():
     pattave = df_holef["PN"].mean()
     labelCB = f" patt {pattave:.2f}"
 
+    progress_bar.progress(50)
+
 
     meterG, percentageS, numberS = st.tabs([labelCB,":deer: ％",":deer: 数"])
     with meterG:
@@ -412,6 +445,8 @@ def main():
         if(1): #function enabled/disabled option
             fig = gauge_view(totalobnumbers,base,df_3patt,df_db_on)
             st.plotly_chart(fig)
+        
+        progress_bar.progress(60)
 
     with percentageS:
        #アベレージ表示 （デフォルト）
@@ -453,6 +488,7 @@ def main():
             label = f":man-facepalming: :field_hockey_stick_and_ball: :field_hockey_stick_and_ball: :field_hockey_stick_and_ball: :calendar:{lastdate_3}"
             st.metric(label=label,value=df_3patt.shape[0],delta=str(ref_3patt))
 
+        progress_bar.progress(70)
 
     # 3  # スコアのヒストグラム表示 
     with st.expander(f"Score_hist.: :skull: DB以上 {lastdate}"):
@@ -461,11 +497,15 @@ def main():
             #ヒストグラム
             ax.hist(df_holef[str(hole)],bins=10,)
             st.pyplot(fig, use_container_width=True)
+            progress_bar.progress(80)
 
     # 4 # データフレーム表示
     with st.expander(f"Dataframe:ラウンド数は {str(df_holef.shape[0])} 回"):
             show_dataframe(hole,df_holef,df_countGon)
+            progress_bar.progress(90)
 
+
+    progress_bar.progress(100)
 
 
 if __name__ == "__main__":
