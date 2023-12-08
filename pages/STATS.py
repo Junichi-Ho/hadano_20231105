@@ -72,7 +72,7 @@ def plot_distribution(df_stadata, selected_years, selected_score_type):
 
     # 選択されたスコアタイプと'Year'でグループ化し、各'Year'の出現頻度を計算
     df_grouped = df_filtered.groupby([selected_score_type, 'Year']).size().unstack(fill_value=0)
-
+    
     # 'Year'で降順にソート
     df_grouped = df_grouped.sort_index(axis=1, ascending=False)
 

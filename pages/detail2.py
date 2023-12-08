@@ -233,52 +233,8 @@ def selection_in_sidebar(df_h):
     df_holef = df_holef[(df_holef["m"].isin(select_month))]
     return df_holef
 
-
-def main():
-    ### Start 基本データフレームの作成
-    st.set_page_config(layout="wide")
+def deletefunction(df_holef,hole,df_ODB,lastdateOB,OBnumbers,df_count2OB,df_countTOB,totalobnumbers,base,df_3patt,df_db_on):
     
-    df = cf.main_dataframe()             #csvからデータフレームに取り込み
-    hole = hole_selection()              #選択するホール番号
-    df_h = cf.dataframe_by_hole(df,hole) #holeに関する情報にスライスし、データフレーム作成する。
-
-    #######################
-    # サイドバー表示       #
-    #　sidebarを加える    #
-    ######################
-    #df_h = ホールにフィルター
-    #df_holef = 年 月 PinPosition で Filterしたもの 
-    ######################
-    #最近のスコア表示
-    if(0): #function disabled
-        the_latest_record(df)
-
-    #年や月でフィルタリングする。
-    df_holef = selection_in_sidebar(df_h) #df_holef = 年 月 PinPosition で Filterしたもの 
-
-    #############################
-    ###ここから Subdataframeの生成
-    #dataframeは 変数名に 必ず "df_" を加えることとする。
-    #############################
-    #1st OBのデータフレーム、2nd OBのデータフレーム、GIRのGonのデータフレーム,OB数と最後のOBになった日付データ
-    df_countTOB,df_count2OB,df_countGon,OBnumbers,lastdateOB = generate_sub_dataframe(hole,df_holef)
-    #overDBのデータフレーム、ダボオン以上 、最後にたたいたダボの日付, OBのアイコン(Par3の場合1stOBないから)、ParNumberアイコン
-    df_ODB,df_db_on,lastdate,iconOB,iconp = generate_sub_dataframe_ODB(hole,df_holef)
-    #グリーンが上にありピンが見えないホールなのかアイコン化する。
-    icon_visible_green,df_3patt,lastdate_3 = generate_sub_dataframe_HP(hole,df_holef)
-
-    #リファレンス 年間のデータを集計 年間ラウンド 年間OB Teeingのリザルト＋GIRのリザルトの合計のみ Hazard columnは含まず
-    #GONしなかった数 3パットの数
-    this_year = 23 #比較する年を記載する 2023年
-    ref_num,ref_OB,ref_paron,ref_3patt = reference_dataframe(df_h,this_year,hole)
-
-    ###################
-    ### 表示       ####
-    ###################
-    # 1  # タイトルは、In/OUT Hole Number、回数 打数アベレージを記載
-    bun_title = f"No.{str(hole)}  :golfer: {df_holef.shape[0]} {iconp} {df_holef[str(hole)].mean():.3f} "
-    st.subheader(bun_title)
-
     # 2  # メトリクス       
     if df_holef.shape[0]:
         base = df_holef.shape[0]
@@ -351,8 +307,59 @@ def main():
             show_dataframe(hole,df_holef,df_countGon)
 
 
+
+def main():
+    ### Start 基本データフレームの作成
+    st.set_page_config(layout="wide")
+    
+    df = cf.main_dataframe()             #csvからデータフレームに取り込み
+    hole = hole_selection()              #選択するホール番号
+    df_h = cf.dataframe_by_hole(df,hole) #holeに関する情報にスライスし、データフレーム作成する。
+
+    #######################
+    # サイドバー表示       #
+    #　sidebarを加える    #
+    ######################
+    #df_h = ホールにフィルター
+    #df_holef = 年 月 PinPosition で Filterしたもの 
+    ######################
+    #最近のスコア表示
+    if(0): #function disabled
+        the_latest_record(df)
+
+    #年や月でフィルタリングする。
+    df_holef = selection_in_sidebar(df_h) #df_holef = 年 月 PinPosition で Filterしたもの 
+
+    #############################
+    ###ここから Subdataframeの生成
+    #dataframeは 変数名に 必ず "df_" を加えることとする。
+    #############################
+    #1st OBのデータフレーム、2nd OBのデータフレーム、GIRのGonのデータフレーム,OB数と最後のOBになった日付データ
+    df_countTOB,df_count2OB,df_countGon,OBnumbers,lastdateOB = generate_sub_dataframe(hole,df_holef)
+    #overDBのデータフレーム、ダボオン以上 、最後にたたいたダボの日付, OBのアイコン(Par3の場合1stOBないから)、ParNumberアイコン
+    df_ODB,df_db_on,lastdate,iconOB,iconp = generate_sub_dataframe_ODB(hole,df_holef)
+    #グリーンが上にありピンが見えないホールなのかアイコン化する。
+    icon_visible_green,df_3patt,lastdate_3 = generate_sub_dataframe_HP(hole,df_holef)
+
+    #リファレンス 年間のデータを集計 年間ラウンド 年間OB Teeingのリザルト＋GIRのリザルトの合計のみ Hazard columnは含まず
+    #GONしなかった数 3パットの数
+    this_year = 23 #比較する年を記載する 2023年
+    ref_num,ref_OB,ref_paron,ref_3patt = reference_dataframe(df_h,this_year,hole)
+
+    # 2  # メトリクス       
+    if df_holef.shape[0]:
+        base = df_holef.shape[0]
+    else:
+        base = 1000 #分母で使用するので0にしない。
+    totalobnumbers = OBnumbers + df_count2OB.shape[0]    ###################
+    ### 表示       ####
+    ###################
+    # 1  # タイトルは、In/OUT Hole Number、回数 打数アベレージを記載
+    bun_title = f"No.{str(hole)}  :golfer: {df_holef.shape[0]} {iconp} {df_holef[str(hole)].mean():.3f} "
+    st.subheader(bun_title)
+
     # 5 # #多様な深堀のためのデータ提供
-    tabITG, tabIHN ,tabPP, tabHist, tabOBs, tab3P, tabdbs, tabmeter = st.tabs([" :man-golfing: "," :golf: "," :1234: "," :musical_score: ", " :ok_woman: ", " :field_hockey_stick_and_ball: ","DBon","meter"])
+    tabITG, tabIHN ,tabPP, tabHist, tabOBs, tab3P, tabdbs, tabmeter = st.tabs([" :man-golfing: "," :golf: "," :1234: "," :musical_score: ", " :ok_woman: ", " :field_hockey_stick_and_ball: ","DBon","Teeing"])
     with tabITG: #ホールイメージ TG00.png
         #reference GIRで使用する アイアンの過去良い軌跡
         df_holef_temp_GO = ref_GIR_iron(df_holef,hole)

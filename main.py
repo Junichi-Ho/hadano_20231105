@@ -232,6 +232,125 @@ def selection_in_sidebar(df_h):
     return df_holef
 
 
+def detail_options(df_holef,hole,df_ODB,lastdateOB,OBnumbers,df_count2OB,df_countTOB,totalobnumbers,base,df_3patt,df_db_on):
+    if(0): #function enabled/disabled option
+        # 5 # #多様な深堀のためのデータ提供
+        tabITG, tabIHN ,tabPP, tabHist, tabOBs, tab3P, tabdbs, tabmeter = st.tabs([" :man-golfing: "," :golf: "," :1234: "," :musical_score: ", " :ok_woman: ", " :field_hockey_stick_and_ball: ","DBon","meter"])
+        with tabITG: #ホールイメージ TG00.png
+            #reference GIRで使用する アイアンの過去良い軌跡
+            df_holef_temp_GO = ref_GIR_iron(df_holef,hole)
+            st.dataframe(df_holef_temp_GO[["残りヤード","G","SN","PN",str(hole),"TR","PP","Date"]].style.background_gradient(cmap="Blues"),hide_index=True)
+
+
+            image = cf.green_image(str(hole),"TG")[0]
+            caption = cf.green_image(str(hole),"TG")[1]
+            st.image(image,caption=caption)
+
+
+        with tabIHN: #グリーンイメージ HN00.png
+            image = cf.green_image(str(hole),"HN")[0]
+            caption = cf.green_image(str(hole),"HN")[1]
+            st.image(image,caption=caption) 
+            club_list = list(df_holef["G"].unique())
+            # "T"の要素別に頻度ヒストグラムを作成
+            fig, ax = plt.subplots(figsize=(3, 3))
+            for club in club_list:
+                data = df_holef[df_holef["G"] == club][str(hole)]
+                ax.hist(data, bins=15, alpha=0.5, label=club)
+            ax.legend()
+            st.pyplot(fig, use_container_width=False)
+
+
+            select_club = st.selectbox("Club選択",club_list)
+            df_temp_bante = df_holef[df_holef["G"].isin([select_club])]
+            fig3, ax3 = plt.subplots(figsize=(3,3))
+            ax3.hist(df_temp_bante[str(hole)],bins=15,color="red")
+            st.pyplot(fig3, use_container_width=False)
+            df_temp_bante
+
+
+
+        with tabPP: #PinポジでFilterするオプション　#Streamlitのマルチセレクト
+            PP_list = list(df_holef["PP"].unique())
+            #select_PP = st.multiselect("Pin PositionでFilterling",PP_list,default=PP_list)
+            #df_holef = df_holef[(df_holef["PP"].isin(select_PP))]
+
+            #文字列化 PP_listは整数なので、st.tabsに使えないので。
+            str_list = [str(num) for num in PP_list]
+            # タブの作成
+            tabs = st.tabs(str_list)
+            # 各タブにコンテンツを追加
+            for i, tab in enumerate(tabs):
+                with tab:
+                    #st.write(f"This is the Dataframe filter by {str_list[0]}")
+                    df_temp_hole = df_holef[df_holef["PP"] == PP_list[i] ]
+                    st.write(f"数 {df_temp_hole.shape[0]}")
+                    st.dataframe(df_temp_hole[["TR","Comment","G","GR","SN","PN",str(hole),"Date"]].style.background_gradient(cmap="Reds"),hide_index=True)
+
+        with tabHist:# スコアの時系列図 
+            subtab1, subtab2 = st.tabs(["chart","database"])
+            with subtab1:
+                st.caption("左が最新")
+                df_areac = df_holef[[str(hole),"PN"]]
+                st.line_chart(df_areac)
+            with subtab2:
+                st.write("DB On以上にフィルター")
+                st.dataframe(df_ODB.style.background_gradient(cmap="Blues"),hide_index=True)
+
+        with tabOBs:# OBの深堀 
+            st.write(f":calendar:{lastdateOB}")
+            st.metric(label="TeeingOB数",value=OBnumbers,)
+            st.metric(label="2ndOB率",value=df_count2OB.shape[0],)
+            df_countTOB
+            #データフレーム表示
+            with st.expander("データフレーム詳細"):
+                st.write("データフレーム詳細")
+                df_holef[[str(hole),"T","TR","GR","Comment","PP","SN","PN"]]
+
+        with tab3P:# Pattの深堀 
+            pattave = df_3patt["SN"].mean()
+            patt3 = f"3 PATTの数 {df_3patt.shape[0]}  _ 3patt時の距離 {pattave:.2f} scatterchart"
+
+            with st.expander(patt3):
+                #グラフ設定 matplotlib
+                fig, ax = plt.subplots()
+                #scatter
+                ax.scatter(
+                    x=df_holef["SN"],
+                    y=df_holef["PN"],
+                    c=df_holef[str(hole)],
+                    #c=df_holef[PP],
+                    alpha=0.8,
+                    #vmin=df_holef[str(hole)].min(),
+                    #vmax=df_holef[str(hole)].max()
+                    )
+                st.pyplot(fig, use_container_width=True)
+
+            #ヒストグラム
+            with st.expander("1st Patt 残り歩数 ヒストグラム"):
+                fig2, ax2 = plt.subplots()
+                ax2.hist(df_holef["SN"],bins=30,)
+                st.pyplot(fig2, use_container_width=True)
+
+        with tabdbs:
+            fig = gauge_view(totalobnumbers,base,df_3patt,df_db_on)
+            # Streamlitでゲージチャートの表示
+            st.plotly_chart(fig)
+            df_db_on
+
+        with tabmeter:
+            club_list,fig = plot_teeing_club(df_holef,hole)
+            st.pyplot(fig, use_container_width=False)
+
+            select_club = st.selectbox("Club選択",club_list)
+            df_temp_bante,fig3 = plot_teeing_club2(select_club,df_holef,hole)
+            st.pyplot(fig3, use_container_width=False)
+            st.dataframe(df_temp_bante)
+
+
+
+
+
 def main():
     ### Start 基本データフレームの作成
     st.set_page_config(layout="wide")
@@ -347,119 +466,6 @@ def main():
     with st.expander(f"Dataframe:ラウンド数は {str(df_holef.shape[0])} 回"):
             show_dataframe(hole,df_holef,df_countGon)
 
-    if(0): #function enabled/disabled option
-        # 5 # #多様な深堀のためのデータ提供
-        tabITG, tabIHN ,tabPP, tabHist, tabOBs, tab3P, tabdbs, tabmeter = st.tabs([" :man-golfing: "," :golf: "," :1234: "," :musical_score: ", " :ok_woman: ", " :field_hockey_stick_and_ball: ","DBon","meter"])
-        with tabITG: #ホールイメージ TG00.png
-            #reference GIRで使用する アイアンの過去良い軌跡
-            df_holef_temp_GO = ref_GIR_iron(df_holef,hole)
-            st.dataframe(df_holef_temp_GO[["残りヤード","G","SN","PN",str(hole),"TR","PP","Date"]].style.background_gradient(cmap="Blues"),hide_index=True)
-
-
-            image = cf.green_image(str(hole),"TG")[0]
-            caption = cf.green_image(str(hole),"TG")[1]
-            st.image(image,caption=caption)
-
-
-        with tabIHN: #グリーンイメージ HN00.png
-            image = cf.green_image(str(hole),"HN")[0]
-            caption = cf.green_image(str(hole),"HN")[1]
-            st.image(image,caption=caption) 
-            club_list = list(df_holef["G"].unique())
-            # "T"の要素別に頻度ヒストグラムを作成
-            fig, ax = plt.subplots(figsize=(3, 3))
-            for club in club_list:
-                data = df_holef[df_holef["G"] == club][str(hole)]
-                ax.hist(data, bins=15, alpha=0.5, label=club)
-            ax.legend()
-            st.pyplot(fig, use_container_width=False)
-
-
-            select_club = st.selectbox("Club選択",club_list)
-            df_temp_bante = df_holef[df_holef["G"].isin([select_club])]
-            fig3, ax3 = plt.subplots(figsize=(3,3))
-            ax3.hist(df_temp_bante[str(hole)],bins=15,color="red")
-            st.pyplot(fig3, use_container_width=False)
-            df_temp_bante
-
-
-
-        with tabPP: #PinポジでFilterするオプション　#Streamlitのマルチセレクト
-            PP_list = list(df_holef["PP"].unique())
-            #select_PP = st.multiselect("Pin PositionでFilterling",PP_list,default=PP_list)
-            #df_holef = df_holef[(df_holef["PP"].isin(select_PP))]
-
-            #文字列化 PP_listは整数なので、st.tabsに使えないので。
-            str_list = [str(num) for num in PP_list]
-            # タブの作成
-            tabs = st.tabs(str_list)
-            # 各タブにコンテンツを追加
-            for i, tab in enumerate(tabs):
-                with tab:
-                    #st.write(f"This is the Dataframe filter by {str_list[0]}")
-                    df_temp_hole = df_holef[df_holef["PP"] == PP_list[i] ]
-                    st.write(f"数 {df_temp_hole.shape[0]}")
-                    st.dataframe(df_temp_hole[["TR","Comment","G","GR","SN","PN",str(hole),"Date"]].style.background_gradient(cmap="Reds"),hide_index=True)
-
-        with tabHist:# スコアの時系列図 
-            subtab1, subtab2 = st.tabs(["chart","database"])
-            with subtab1:
-                st.caption("左が最新")
-                df_areac = df_holef[[str(hole),"PN"]]
-                st.line_chart(df_areac)
-            with subtab2:
-                st.write("DB On以上にフィルター")
-                st.dataframe(df_ODB.style.background_gradient(cmap="Blues"),hide_index=True)
-
-        with tabOBs:# OBの深堀 
-            st.write(f":calendar:{lastdateOB}")
-            st.metric(label="TeeingOB数",value=OBnumbers,)
-            st.metric(label="2ndOB率",value=df_count2OB.shape[0],)
-            df_countTOB
-            #データフレーム表示
-            with st.expander("データフレーム詳細"):
-                st.write("データフレーム詳細")
-                df_holef[[str(hole),"T","TR","GR","Comment","PP","SN","PN"]]
-
-        with tab3P:# Pattの深堀 
-            pattave = df_3patt["SN"].mean()
-            patt3 = f"3 PATTの数 {df_3patt.shape[0]}  _ 3patt時の距離 {pattave:.2f} scatterchart"
-
-            with st.expander(patt3):
-                #グラフ設定 matplotlib
-                fig, ax = plt.subplots()
-                #scatter
-                ax.scatter(
-                    x=df_holef["SN"],
-                    y=df_holef["PN"],
-                    c=df_holef[str(hole)],
-                    #c=df_holef[PP],
-                    alpha=0.8,
-                    #vmin=df_holef[str(hole)].min(),
-                    #vmax=df_holef[str(hole)].max()
-                    )
-                st.pyplot(fig, use_container_width=True)
-
-            #ヒストグラム
-            with st.expander("1st Patt 残り歩数 ヒストグラム"):
-                fig2, ax2 = plt.subplots()
-                ax2.hist(df_holef["SN"],bins=30,)
-                st.pyplot(fig2, use_container_width=True)
-
-        with tabdbs:
-            fig = gauge_view(totalobnumbers,base,df_3patt,df_db_on)
-            # Streamlitでゲージチャートの表示
-            st.plotly_chart(fig)
-            df_db_on
-
-        with tabmeter:
-            club_list,fig = plot_teeing_club(df_holef,hole)
-            st.pyplot(fig, use_container_width=False)
-
-            select_club = st.selectbox("Club選択",club_list)
-            df_temp_bante,fig3 = plot_teeing_club2(select_club,df_holef,hole)
-            st.pyplot(fig3, use_container_width=False)
-            st.dataframe(df_temp_bante)
 
 
 if __name__ == "__main__":
