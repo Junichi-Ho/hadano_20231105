@@ -11,6 +11,14 @@ sys.path.append('../')  # 上位フォルダをパスに追加
 
 import cf  # 上位フォルダにあるモジュールをインポート
 
+def calculate_php(row): #パーオン計算列
+    if row["hole"] in [4, 7, 10, 14]:
+        return row["PH"] - 1
+    elif row["hole"] in [6, 8, 14, 18]:
+        return row["PH"] - 3
+    else:
+        return row["PH"] - 2
+
 @st.cache_data
 def create_dataframe_from():
     df = cf.main_dataframe()
@@ -29,6 +37,8 @@ def create_dataframe_from():
     # NaNを除外してから処理
     combined_df = combined_df.dropna(subset=["SN"])
     
+    combined_df["PHP"] = combined_df.apply(calculate_php, axis=1)
+    #combined_df
     return combined_df
 
 def sidebar_display(combined_df):
@@ -50,15 +60,29 @@ def sidebar_display(combined_df):
 
 
 def filter_for_drilldown(combined_df):
-    st.write("ホール マルチセレクト")
-    st.write("年 マルチセレクト")
-    st.write("Pin Position")
     #年でFilterするオプション#Streamlitのマルチセレクト
+
     year_list = list(combined_df["y"].unique())
     default_list = ["23","22"]
     select_year = st.multiselect("年でFilterling",year_list,default=default_list)
-    combined_df2 = combined_df[(combined_df["y"].isin(select_year))]
+    combined_df = combined_df[(combined_df["y"].isin(select_year))]
 
+    hole_list = list(combined_df["hole"].unique())
+    #default_list = ["23","22"]
+    select_hole = st.multiselect("HoleでFilterling",hole_list,default=hole_list)
+    combined_df = combined_df[(combined_df["hole"].isin(select_hole))]
+
+    hole_list = list(combined_df["PP"].unique())
+    #default_list = ["23","22"]
+    select_PP = st.multiselect("Pin PositionでFilterling",hole_list,default=hole_list)
+    combined_df = combined_df[(combined_df["PP"].isin(select_PP))]
+
+    PHP_list = list(combined_df["PHP"].unique())
+    #default_list = ["23","22"]
+    select_PHP = st.multiselect("Par On =0 でFilterling",PHP_list,default=PHP_list)
+    combined_df2 = combined_df[(combined_df["PHP"].isin(select_PHP))]
+
+    combined_df2.shape[0]
     return combined_df2
 
 @st.cache_data
@@ -83,10 +107,14 @@ def crosstab_data_options(combined_df,normalize,ruiseki,display_float,optimize_r
     return crosstab_data
 
 @st.cache_data
-def bar_figure(crosstab_data):
+def bar_figure(crosstab_data,concentrate_range):
     # 積み上げチャートを描画
     fig, ax = plt.subplots(figsize=(10, 6))
     crosstab_data.plot(kind='bar', stacked=True, ax=ax, width=1 , align="center")  # Barの幅を調整
+
+
+    if(concentrate_range):
+        ax.set_xlim(7.0, 13.0)  # x軸の表示範囲を8.0から13.0に設定
     #crosstab_data
     return fig
 
@@ -97,40 +125,71 @@ def main_display(combined_df):
     st.title("Patt")
     
     #Filter
-    with st.expander("Filter FilterはサイドバーでなくMainで引き出しにした方がよいDrill Down時は,高頻度でアクセスするので。"):
+    with st.expander("Filter"):
         combined_df2 = filter_for_drilldown(combined_df)
+
+    data_num  = combined_df2.shape[0]
 
     st.header("Graph")
     st.write("距離別 Patt数 積み上げ100％割合グラフ")
 
-    st.write("Filter")
+
+    #st.write("Filter")
     # pd.crosstabを使用して"PN"の構成分布図を作成    
     crosstab_data = crosstab_data_options(combined_df2,"index",False,True,0,21) #SN PNでクロス集計
-    fig = bar_figure(crosstab_data) #描画
-    st.pyplot(fig) # グラフをStreamlitで表示
+    fig1 = bar_figure(crosstab_data,concentrate_range=False) #描画
+    plt.close(fig1) # グラフをStreamlitで表示
 
-    st.write("全数")
+    #st.write("全数")
     # pd.crosstabを使用して"PN"の構成分布図を作成    
     crosstab_data1 = crosstab_data_options(combined_df,"index",False,True,0,21) #SN PNでクロス集計
-    fig = bar_figure(crosstab_data1) #描画
-    st.pyplot(fig) # グラフをStreamlitで表示
+    fig2 = bar_figure(crosstab_data1,concentrate_range=False) #描画
+    plt.close(fig2) # グラフをStreamlitで表示
+
+    #crosstab_data
+    col1,col2 = st.columns(2)
+    col1.write(f"Filtered : {data_num}")
+    col1.pyplot(fig1,use_container_width=True)
+    col2.write(f"全数")
+    col2.pyplot(fig2,use_container_width=True) 
 
     tab1, tab2, tab3, tab4 = st.tabs(["count","2","3","detail"])
     with tab1:
         st.write("距離別累積頻度チャート")
 
-        st.write("Filter")
+
         # pd.crosstabを使用して"PN"の構成分布図を作成（累積）
         crosstab_data = crosstab_data_options(combined_df2,"all",True,True,0,21)
-        fig = bar_figure(crosstab_data) #描画
-        st.pyplot(fig) # グラフをStreamlitで表示
+        fig1 = bar_figure(crosstab_data,concentrate_range=True) #描画
+        plt.close(fig1) # グラフをStreamlitで表示
 
-
-        st.write("全数")
         # pd.crosstabを使用して"PN"の構成分布図を作成（累積）
         crosstab_dataAll = crosstab_data_options(combined_df,"all",True,True,0,21)
-        fig = bar_figure(crosstab_dataAll) #描画
-        st.pyplot(fig) # グラフをStreamlitで表示
+        fig2 = bar_figure(crosstab_dataAll,concentrate_range=True) #描画
+        plt.close(fig2) # グラフをStreamlitで表示
+
+        col1,col2 = st.columns(2)
+        col1.write(f"Filtered : {data_num}")
+        col1.pyplot(fig1,use_container_width=True)
+        col2.write(f"全数")
+        col2.pyplot(fig2,use_container_width=True)
+
+        # pd.crosstabを使用して"PN"の構成分布図を作成（累積）
+        crosstab_data = crosstab_data_options(combined_df2,"all",True,True,0,21)
+        fig1 = bar_figure(crosstab_data,concentrate_range=False) #描画
+        plt.close(fig1) # グラフをStreamlitで表示
+
+        # pd.crosstabを使用して"PN"の構成分布図を作成（累積）
+        crosstab_dataAll = crosstab_data_options(combined_df,"all",True,True,0,21)
+        fig2 = bar_figure(crosstab_dataAll,concentrate_range=False) #描画
+        plt.close(fig2) # グラフをStreamlitで表示
+
+
+
+
+        col1,col2 = st.columns(2)
+        col1.pyplot(fig1,use_container_width=True)
+        col2.pyplot(fig2,use_container_width=True)
 
         ## クロス集計テーブルをグラフ化
         #crosstab_data2.plot(kind='bar', stacked=True)
@@ -151,7 +210,7 @@ def main_display(combined_df):
         st.write("距離別頻度バーチャート")
         ## pd.crosstabを使用してクロス集計テーブルを作成
         crosstab_data4 = crosstab_data_options(combined_df,False,False,True,0,21)
-        fig = bar_figure(crosstab_data4) #描画
+        fig = bar_figure(crosstab_data4,concentrate_range=False) #描画
         st.pyplot(fig) # グラフをStreamlitで表示
 
         st.write("hole別 Patt数 バーチャート")
@@ -162,11 +221,11 @@ def main_display(combined_df):
         st.write("全距離別パット数割合")
         # pd.crosstabを使用して"PN"の構成分布図を作成    
         crosstab_data1 = crosstab_data_options(combined_df,"index",False,True,-1,-1) #SN PNでクロス集計
-        fig = bar_figure(crosstab_data1) #描画
+        fig = bar_figure(crosstab_data1,concentrate_range=False) #描画
         st.pyplot(fig) # グラフをStreamlitで表示
         # pd.crosstabを使用して"PN"の構成分布図を作成    
         crosstab_data1 = crosstab_data_options(combined_df,"all",True,True,-1,-1) #SN PNでクロス集計
-        fig = bar_figure(crosstab_data1) #描画
+        fig = bar_figure(crosstab_data1,concentrate_range=False) #描画
         st.pyplot(fig) # グラフをStreamlitで表示
 
         # "SN"列の出現率を計算
@@ -181,7 +240,7 @@ def main_display(combined_df):
 
 
 def main():
-    #各ホール盾持ちデータの取得
+    #各ホール縦持ちデータの取得
     combined_df = create_dataframe_from()
     #SideBar表示
     sidebar_display(combined_df)
