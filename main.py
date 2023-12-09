@@ -354,7 +354,7 @@ def detail_options(df_holef,hole,df_ODB,lastdateOB,OBnumbers,df_count2OB,df_coun
 
 
 def main():
-    if st.checkbox("時系列スライダー",value=False):
+    if (0):
         # カスタムフォーマットとオプションを持つ日付時刻スライダーを作成する
         start_date = datetime(2023, 1, 1)
         end_date = start_date + timedelta(weeks=52)
