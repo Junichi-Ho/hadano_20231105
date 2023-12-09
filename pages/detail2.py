@@ -6,9 +6,13 @@ import matplotlib.pyplot as plt
 import datetime
 import plotly.graph_objects as go
 import matplotlib.image as mpimg
+import time
 import sys
 sys.path.append('../')  # 上位フォルダをパスに追加
 import cf
+
+### Start 基本データフレームの作成
+st.set_page_config(layout="wide")
 
 @st.cache_data
 def generate_sub_dataframe(hole,df_holef): #OB x2 、GIR Dataframe、Dateを作成
@@ -309,8 +313,21 @@ def deletefunction(df_holef,hole,df_ODB,lastdateOB,OBnumbers,df_count2OB,df_coun
 
 
 def main():
-    ### Start 基本データフレームの作成
-    st.set_page_config(layout="wide")
+    #プログレスバー
+    progress_bar = st.progress(0)
+    process_name = st.empty()
+    progress_text1 = st.empty()
+    progress_text2 = st.empty()
+    progress_text3 = st.empty()
+    progress_text4 = st.empty()
+    progress_text5 = st.empty()
+    progress_text6 = st.empty()
+    progress_text7 = st.empty()
+    progress_text8 = st.empty()
+    progress_text9 = st.empty()
+
+    progress_text = st.empty()
+    start_time = time.time()
     
     df = cf.main_dataframe()             #csvからデータフレームに取り込み
     hole = hole_selection()              #選択するホール番号
@@ -326,6 +343,10 @@ def main():
     #最近のスコア表示
     if(0): #function disabled
         the_latest_record(df)
+
+    # プログレスバーとテキストの更新
+    progress_bar.progress(10)
+
 
     #年や月でフィルタリングする。
     df_holef = selection_in_sidebar(df_h) #df_holef = 年 月 PinPosition で Filterしたもの 
@@ -352,6 +373,12 @@ def main():
     else:
         base = 1000 #分母で使用するので0にしない。
     totalobnumbers = OBnumbers + df_count2OB.shape[0]    ###################
+
+    elapsed_time = time.time() - start_time
+    start_time = time.time()
+    ini_start_time = time.time()
+    progress_text1.text(f"to dataframe Elapsed time: {elapsed_time:.2f} seconds")
+    
     ### 表示       ####
     ###################
     # 1  # タイトルは、In/OUT Hole Number、回数 打数アベレージを記載
@@ -361,6 +388,10 @@ def main():
     # 5 # #多様な深堀のためのデータ提供
     tabITG, tabIHN ,tabPP, tabHist, tabOBs, tab3P, tabdbs, tabmeter = st.tabs([" :man-golfing: "," :golf: "," :1234: "," :musical_score: ", " :ok_woman: ", " :field_hockey_stick_and_ball: ","DBon","Teeing"])
     with tabITG: #ホールイメージ TG00.png
+        # プログレスバーとテキストの更新
+        progress_bar.progress(20)
+        process_name.text(f"残りヤードとホールイメージ")
+
         #reference GIRで使用する アイアンの過去良い軌跡
         df_holef_temp_GO = ref_GIR_iron(df_holef,hole)
         st.dataframe(df_holef_temp_GO[["残りヤード","G","SN","PN",str(hole),"TR","PP","Date"]].style.background_gradient(cmap="Blues"),hide_index=True)
@@ -370,31 +401,56 @@ def main():
         caption = cf.green_image(str(hole),"TG")[1]
         st.image(image,caption=caption)
 
+        # プログレスバーとテキストの更新
+        elapsed_time = time.time() - start_time
+        start_time = time.time()
+        progress_text2.text(f"残りヤードとホールイメージ Elapsed time: {elapsed_time:.2f} seconds")
+
+
 
     with tabIHN: #グリーンイメージ HN00.png
-        image = cf.green_image(str(hole),"HN")[0]
-        caption = cf.green_image(str(hole),"HN")[1]
-        st.image(image,caption=caption) 
+
+        # プログレスバーとテキストの更新
+        progress_bar.progress(30)
+        process_name.text(f"グリーンと番手戦略")
+
+        if st.checkbox("グリーン表示",value=False):
+            image = cf.green_image(str(hole),"HN")[0]
+            caption = cf.green_image(str(hole),"HN")[1]
+            st.image(image,caption=caption) 
+
         club_list = list(df_holef["G"].unique())
-        # "T"の要素別に頻度ヒストグラムを作成
-        fig, ax = plt.subplots(figsize=(3, 3))
-        for club in club_list:
-            data = df_holef[df_holef["G"] == club][str(hole)]
-            ax.hist(data, bins=15, alpha=0.5, label=club)
-        ax.legend()
-        st.pyplot(fig, use_container_width=False)
 
+        if st.checkbox("TeeingのClub別で頻度/打数のグラフ表示",value=False):
+            fig, ax = plt.subplots(figsize=(3, 3))
+            for club in club_list:
+                data = df_holef[df_holef["G"] == club][str(hole)]
+                ax.hist(data, bins=15, alpha=0.5, label=club)
+            ax.legend()
+            st.pyplot(fig, use_container_width=False)
 
-        select_club = st.selectbox("Club選択",club_list)
-        df_temp_bante = df_holef[df_holef["G"].isin([select_club])]
-        fig3, ax3 = plt.subplots(figsize=(3,3))
-        ax3.hist(df_temp_bante[str(hole)],bins=15,color="red")
-        st.pyplot(fig3, use_container_width=False)
-        df_temp_bante
+        if st.checkbox("番手別で頻度/打数のグラフ表示",value=False):
+            select_club = st.selectbox("Club選択",club_list)
+            df_temp_bante = df_holef[df_holef["G"].isin([select_club])]
+            fig3, ax3 = plt.subplots(figsize=(3,3))
+            ax3.hist(df_temp_bante[str(hole)],bins=15,color="red")
+            st.pyplot(fig3, use_container_width=False)
+            df_temp_bante
+
+        # プログレスバーとテキストの更新
+        elapsed_time = time.time() - start_time
+        start_time = time.time()
+        progress_text3.text(f"グリーンと番手戦略 Elapsed time: {elapsed_time:.2f} seconds")
 
 
 
     with tabPP: #PinポジでFilterするオプション　#Streamlitのマルチセレクト
+
+        # プログレスバーとテキストの更新
+        progress_bar.progress(40)
+        process_name.text(f"PinPosition別データフレーム")
+
+
         PP_list = list(df_holef["PP"].unique())
         #select_PP = st.multiselect("Pin PositionでFilterling",PP_list,default=PP_list)
         #df_holef = df_holef[(df_holef["PP"].isin(select_PP))]
@@ -411,7 +467,18 @@ def main():
                 st.write(f"数 {df_temp_hole.shape[0]}")
                 st.dataframe(df_temp_hole[["TR","Comment","G","GR","SN","PN",str(hole),"Date"]].style.background_gradient(cmap="Reds"),hide_index=True)
 
+        # プログレスバーとテキストの更新
+        elapsed_time = time.time() - start_time
+        start_time = time.time()
+        progress_text4.text(f"PinPosition別データフレーム Elapsed time: {elapsed_time:.2f} seconds")
+
+
+
     with tabHist:# スコアの時系列図 
+        # プログレスバーとテキストの更新
+        progress_bar.progress(50)
+        process_name.text(f"スコアの時系列")
+
         subtab1, subtab2 = st.tabs(["chart","database"])
         with subtab1:
             st.caption("左が最新")
@@ -421,7 +488,18 @@ def main():
             st.write("DB On以上にフィルター")
             st.dataframe(df_ODB.style.background_gradient(cmap="Blues"),hide_index=True)
 
+
+        # プログレスバーとテキストの更新
+        elapsed_time = time.time() - start_time
+        start_time = time.time()
+        progress_text5.text(f"スコアの時系列 Elapsed time: {elapsed_time:.2f} seconds")
+
+
     with tabOBs:# OBの深堀 
+        # プログレスバーとテキストの更新
+        progress_bar.progress(60)
+        process_name.text(f"OBデータ")
+
         st.write(f":calendar:{lastdateOB}")
         st.metric(label="TeeingOB数",value=OBnumbers,)
         st.metric(label="2ndOB率",value=df_count2OB.shape[0],)
@@ -431,11 +509,21 @@ def main():
             st.write("データフレーム詳細")
             df_holef[[str(hole),"T","TR","GR","Comment","PP","SN","PN"]]
 
+        # プログレスバーとテキストの更新
+        elapsed_time = time.time() - start_time
+        start_time = time.time()
+        progress_text5.text(f"OBデータ Elapsed time: {elapsed_time:.2f} seconds")
+
+
     with tab3P:# Pattの深堀 
+        # プログレスバーとテキストの更新
+        progress_bar.progress(70)
+        process_name.text(f"3Pattデータ")
+
         pattave = df_3patt["SN"].mean()
         patt3 = f"3 PATTの数 {df_3patt.shape[0]}  _ 3patt時の距離 {pattave:.2f} scatterchart"
 
-        with st.expander(patt3):
+        if st.checkbox(patt3,value=False):
             #グラフ設定 matplotlib
             fig, ax = plt.subplots()
             #scatter
@@ -451,25 +539,56 @@ def main():
             st.pyplot(fig, use_container_width=True)
 
         #ヒストグラム
-        with st.expander("1st Patt 残り歩数 ヒストグラム"):
+        if st.checkbox("1st Patt 残り歩数 ヒストグラム",value=False):
             fig2, ax2 = plt.subplots()
             ax2.hist(df_holef["SN"],bins=30,)
             st.pyplot(fig2, use_container_width=True)
 
+        # プログレスバーとテキストの更新
+        elapsed_time = time.time() - start_time
+        start_time = time.time()
+        progress_text6.text(f"3 PATTの数 Elapsed time: {elapsed_time:.2f} seconds")
+
+
     with tabdbs:
+        # プログレスバーとテキストの更新
+        progress_bar.progress(80)
+        process_name.text(f"ダボOnデータ")
+
         fig = gauge_view(totalobnumbers,base,df_3patt,df_db_on)
         # Streamlitでゲージチャートの表示
         st.plotly_chart(fig)
         df_db_on
 
+        # プログレスバーとテキストの更新
+        elapsed_time = time.time() - start_time
+        start_time = time.time()
+        progress_text7.text(f"ダボOnデータ Elapsed time: {elapsed_time:.2f} seconds")
+
+
     with tabmeter:
         club_list,fig = plot_teeing_club(df_holef,hole)
-        st.pyplot(fig, use_container_width=False)
+        if st.checkbox("Teeingshot 打数と頻度チャート",value=False):
+            st.pyplot(fig, use_container_width=False)
+        
+        if st.checkbox("Teeing Club別 打数と頻度チャート",value=False):
+            select_club = st.selectbox("Club選択",club_list)
+            df_temp_bante,fig3 = plot_teeing_club2(select_club,df_holef,hole)
+            st.pyplot(fig3, use_container_width=False)
+            st.dataframe(df_temp_bante)
 
-        select_club = st.selectbox("Club選択",club_list)
-        df_temp_bante,fig3 = plot_teeing_club2(select_club,df_holef,hole)
-        st.pyplot(fig3, use_container_width=False)
-        st.dataframe(df_temp_bante)
+        # プログレスバーとテキストの更新
+        elapsed_time = time.time() - start_time
+        progress_text8.text(f"Teeing 番手 Elapsed time: {elapsed_time:.2f} seconds")
+
+
+
+    # プログレスバーとテキストの更新
+    progress_bar.progress(100)
+    process_name.text(f"完了")
+    elapsed_time = time.time() - ini_start_time
+    progress_text.text(f"Elapsed time: {elapsed_time:.2f} seconds")
+
 
 
 if __name__ == "__main__":
