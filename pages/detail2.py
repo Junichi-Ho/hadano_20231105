@@ -313,21 +313,23 @@ def deletefunction(df_holef,hole,df_ODB,lastdateOB,OBnumbers,df_count2OB,df_coun
 
 
 def main():
-    #プログレスバー
-    progress_bar = st.progress(0)
-    process_name = st.empty()
-    progress_text1 = st.empty()
-    progress_text2 = st.empty()
-    progress_text3 = st.empty()
-    progress_text4 = st.empty()
-    progress_text5 = st.empty()
-    progress_text6 = st.empty()
-    progress_text7 = st.empty()
-    progress_text8 = st.empty()
-    progress_text9 = st.empty()
+    debug_mode = 0
+    if(debug_mode):
+        #プログレスバー
+        progress_bar = st.progress(0)
+        process_name = st.empty()
+        progress_text1 = st.empty()
+        progress_text2 = st.empty()
+        progress_text3 = st.empty()
+        progress_text4 = st.empty()
+        progress_text5 = st.empty()
+        progress_text6 = st.empty()
+        progress_text7 = st.empty()
+        progress_text8 = st.empty()
 
-    progress_text = st.empty()
-    start_time = time.time()
+        progress_text = st.empty()
+        start_time = time.time()
+        ini_start_time = time.time()
     
     df = cf.main_dataframe()             #csvからデータフレームに取り込み
     hole = hole_selection()              #選択するホール番号
@@ -344,8 +346,9 @@ def main():
     if(0): #function disabled
         the_latest_record(df)
 
-    # プログレスバーとテキストの更新
-    progress_bar.progress(10)
+    if(debug_mode):
+        # プログレスバーとテキストの更新
+        progress_bar.progress(10)
 
 
     #年や月でフィルタリングする。
@@ -367,30 +370,98 @@ def main():
     this_year = 23 #比較する年を記載する 2023年
     ref_num,ref_OB,ref_paron,ref_3patt = reference_dataframe(df_h,this_year,hole)
 
+
+
     # 2  # メトリクス       
     if df_holef.shape[0]:
         base = df_holef.shape[0]
     else:
         base = 1000 #分母で使用するので0にしない。
-    totalobnumbers = OBnumbers + df_count2OB.shape[0]    ###################
+    totalobnumbers = OBnumbers + df_count2OB.shape[0]
 
-    elapsed_time = time.time() - start_time
-    start_time = time.time()
-    ini_start_time = time.time()
-    progress_text1.text(f"to dataframe Elapsed time: {elapsed_time:.2f} seconds")
-    
+    pattave = df_holef["PN"].mean()
+    labelCB = f" patt {pattave:.2f}"
+
     ### 表示       ####
     ###################
     # 1  # タイトルは、In/OUT Hole Number、回数 打数アベレージを記載
     bun_title = f"No.{str(hole)}  :golfer: {df_holef.shape[0]} {iconp} {df_holef[str(hole)].mean():.3f} "
     st.subheader(bun_title)
 
+    meterG, percentageS, numberS = st.tabs([labelCB,":deer: ％",":deer: 数"])
+    with meterG:
+        # Streamlitでゲージチャートの表示
+        if(1): #function enabled/disabled option
+            fig = gauge_view(totalobnumbers,base,df_3patt,df_db_on)
+            st.plotly_chart(fig)
+
+    with percentageS:
+       #アベレージ表示 （デフォルト）
+        col1,col2,col3=st.columns((1,1,1))
+        with col1:            
+            dbon = (df_db_on.shape[0] - totalobnumbers) /base *100
+            a = totalobnumbers/base*100
+            b = ref_OB/ref_num*100
+            st.metric(label=f"{iconOB} TOB {OBnumbers} : 2OB {df_count2OB.shape[0]}  __ DBon-2OB {dbon:.2f} %",value=f"{a:.1f}",delta=f"{b:.1f}")
+            
+        with col2:
+            a = (df_holef.shape[0]-df_countGon.shape[0]-totalobnumbers)/(base-totalobnumbers)*100
+            b = ref_paron/ref_num*100
+            pattave=df_holef["SN"].mean()
+            st.metric(
+                label=f"{icon_visible_green} NOT GOn _ 1st Patt Ave {pattave:.2f}",
+                value=f"{a:.1f}",delta=f"{b:.1f}")
+            
+        with col3:
+            a = df_3patt.shape[0]/base*100
+            b = ref_3patt/ref_num*100
+            label = f":man-facepalming: :field_hockey_stick_and_ball: :field_hockey_stick_and_ball: :field_hockey_stick_and_ball: :calendar:{lastdate_3}"
+            st.metric(label=label,value=f"{a:.1f}",delta=f"{b:.1f}")
+
+    with numberS:
+        #カウント表示
+        col1,col2,col3=st.columns((1,1,1))
+        with col1:
+            dbon = df_db_on.shape[0] - totalobnumbers
+            st.metric(label=f"{iconOB} TOB {OBnumbers} : 2OB {df_count2OB.shape[0]} : DBon-2OB {dbon}",value=totalobnumbers,delta=ref_OB)
+            
+        with col2:
+            pattave=df_holef["SN"].mean()
+            st.metric(
+                label=f"{icon_visible_green} NOT GOn _ 1st Patt Ave {pattave:.2f}",
+                value=df_holef.shape[0]-df_countGon.shape[0],delta=str(ref_paron))
+            
+        with col3:
+            label = f":man-facepalming: :field_hockey_stick_and_ball: :field_hockey_stick_and_ball: :field_hockey_stick_and_ball: :calendar:{lastdate_3}"
+            st.metric(label=label,value=df_3patt.shape[0],delta=str(ref_3patt))
+
+
+    # 3  # スコアのヒストグラム表示 
+    if st.checkbox(f"Score_hist.: :skull: DB以上 {lastdate}"):
+            #グラフ設定 matplotlib
+            fig, ax = plt.subplots(figsize=(6, 4))
+            #ヒストグラム
+            ax.hist(df_holef[str(hole)],bins=10,)
+            st.pyplot(fig, use_container_width=True)
+
+    # 4 # データフレーム表示
+    with st.expander(f"Dataframe:ラウンド数は {str(df_holef.shape[0])} 回"):
+            show_dataframe(hole,df_holef,df_countGon)
+
+
+    if(debug_mode):
+        elapsed_time = time.time() - start_time
+        start_time = time.time()
+        progress_text1.text(f"to dataframe Elapsed time: {elapsed_time:.2f} seconds")
+    
+
+
     # 5 # #多様な深堀のためのデータ提供
     tabITG, tabIHN ,tabPP, tabHist, tabOBs, tab3P, tabdbs, tabmeter = st.tabs([" :man-golfing: "," :golf: "," :1234: "," :musical_score: ", " :ok_woman: ", " :field_hockey_stick_and_ball: ","DBon","Teeing"])
     with tabITG: #ホールイメージ TG00.png
-        # プログレスバーとテキストの更新
-        progress_bar.progress(20)
-        process_name.text(f"残りヤードとホールイメージ")
+        if(debug_mode):        # プログレスバーとテキストの更新
+            progress_bar.progress(20)
+            process_name.text(f"残りヤードとホールイメージ")
 
         #reference GIRで使用する アイアンの過去良い軌跡
         df_holef_temp_GO = ref_GIR_iron(df_holef,hole)
@@ -401,18 +472,17 @@ def main():
         caption = cf.green_image(str(hole),"TG")[1]
         st.image(image,caption=caption)
 
-        # プログレスバーとテキストの更新
-        elapsed_time = time.time() - start_time
-        start_time = time.time()
-        progress_text2.text(f"残りヤードとホールイメージ Elapsed time: {elapsed_time:.2f} seconds")
+        if(debug_mode):# プログレスバーとテキストの更新
+            elapsed_time = time.time() - start_time
+            start_time = time.time()
+            progress_text2.text(f"残りヤードとホールイメージ Elapsed time: {elapsed_time:.2f} seconds")
 
 
 
     with tabIHN: #グリーンイメージ HN00.png
-
-        # プログレスバーとテキストの更新
-        progress_bar.progress(30)
-        process_name.text(f"グリーンと番手戦略")
+        if(debug_mode):# プログレスバーとテキストの更新
+            progress_bar.progress(30)
+            process_name.text(f"グリーンと番手戦略")
 
         if st.checkbox("グリーン表示",value=False):
             image = cf.green_image(str(hole),"HN")[0]
@@ -437,18 +507,17 @@ def main():
             st.pyplot(fig3, use_container_width=False)
             df_temp_bante
 
-        # プログレスバーとテキストの更新
-        elapsed_time = time.time() - start_time
-        start_time = time.time()
-        progress_text3.text(f"グリーンと番手戦略 Elapsed time: {elapsed_time:.2f} seconds")
+        if(debug_mode): # プログレスバーとテキストの更新
+            elapsed_time = time.time() - start_time
+            start_time = time.time()
+            progress_text3.text(f"グリーンと番手戦略 Elapsed time: {elapsed_time:.2f} seconds")
 
 
 
     with tabPP: #PinポジでFilterするオプション　#Streamlitのマルチセレクト
-
-        # プログレスバーとテキストの更新
-        progress_bar.progress(40)
-        process_name.text(f"PinPosition別データフレーム")
+        if(debug_mode): # プログレスバーとテキストの更新
+            progress_bar.progress(40)
+            process_name.text(f"PinPosition別データフレーム")
 
 
         PP_list = list(df_holef["PP"].unique())
@@ -467,17 +536,17 @@ def main():
                 st.write(f"数 {df_temp_hole.shape[0]}")
                 st.dataframe(df_temp_hole[["TR","Comment","G","GR","SN","PN",str(hole),"Date"]].style.background_gradient(cmap="Reds"),hide_index=True)
 
-        # プログレスバーとテキストの更新
-        elapsed_time = time.time() - start_time
-        start_time = time.time()
-        progress_text4.text(f"PinPosition別データフレーム Elapsed time: {elapsed_time:.2f} seconds")
+        if(debug_mode):# プログレスバーとテキストの更新
+            elapsed_time = time.time() - start_time
+            start_time = time.time()
+            progress_text4.text(f"PinPosition別データフレーム Elapsed time: {elapsed_time:.2f} seconds")
 
 
 
     with tabHist:# スコアの時系列図 
-        # プログレスバーとテキストの更新
-        progress_bar.progress(50)
-        process_name.text(f"スコアの時系列")
+        if(debug_mode):# プログレスバーとテキストの更新
+            progress_bar.progress(50)
+            process_name.text(f"スコアの時系列")
 
         subtab1, subtab2 = st.tabs(["chart","database"])
         with subtab1:
@@ -488,17 +557,16 @@ def main():
             st.write("DB On以上にフィルター")
             st.dataframe(df_ODB.style.background_gradient(cmap="Blues"),hide_index=True)
 
-
-        # プログレスバーとテキストの更新
-        elapsed_time = time.time() - start_time
-        start_time = time.time()
-        progress_text5.text(f"スコアの時系列 Elapsed time: {elapsed_time:.2f} seconds")
+        if(debug_mode):# プログレスバーとテキストの更新
+            elapsed_time = time.time() - start_time
+            start_time = time.time()
+            progress_text5.text(f"スコアの時系列 Elapsed time: {elapsed_time:.2f} seconds")
 
 
     with tabOBs:# OBの深堀 
-        # プログレスバーとテキストの更新
-        progress_bar.progress(60)
-        process_name.text(f"OBデータ")
+        if(debug_mode):# プログレスバーとテキストの更新
+            progress_bar.progress(60)
+            process_name.text(f"OBデータ")
 
         st.write(f":calendar:{lastdateOB}")
         st.metric(label="TeeingOB数",value=OBnumbers,)
@@ -509,16 +577,16 @@ def main():
             st.write("データフレーム詳細")
             df_holef[[str(hole),"T","TR","GR","Comment","PP","SN","PN"]]
 
-        # プログレスバーとテキストの更新
-        elapsed_time = time.time() - start_time
-        start_time = time.time()
-        progress_text5.text(f"OBデータ Elapsed time: {elapsed_time:.2f} seconds")
+        if(debug_mode):# プログレスバーとテキストの更新
+            elapsed_time = time.time() - start_time
+            start_time = time.time()
+            progress_text5.text(f"OBデータ Elapsed time: {elapsed_time:.2f} seconds")
 
 
     with tab3P:# Pattの深堀 
-        # プログレスバーとテキストの更新
-        progress_bar.progress(70)
-        process_name.text(f"3Pattデータ")
+        if(debug_mode):# プログレスバーとテキストの更新
+            progress_bar.progress(70)
+            process_name.text(f"3Pattデータ")
 
         pattave = df_3patt["SN"].mean()
         patt3 = f"3 PATTの数 {df_3patt.shape[0]}  _ 3patt時の距離 {pattave:.2f} scatterchart"
@@ -544,26 +612,27 @@ def main():
             ax2.hist(df_holef["SN"],bins=30,)
             st.pyplot(fig2, use_container_width=True)
 
-        # プログレスバーとテキストの更新
-        elapsed_time = time.time() - start_time
-        start_time = time.time()
-        progress_text6.text(f"3 PATTの数 Elapsed time: {elapsed_time:.2f} seconds")
+        if(debug_mode):# プログレスバーとテキストの更新
+            elapsed_time = time.time() - start_time
+            start_time = time.time()
+            progress_text6.text(f"3 PATTの数 Elapsed time: {elapsed_time:.2f} seconds")
 
 
     with tabdbs:
-        # プログレスバーとテキストの更新
-        progress_bar.progress(80)
-        process_name.text(f"ダボOnデータ")
+        if(debug_mode):
+            # プログレスバーとテキストの更新
+            progress_bar.progress(80)
+            process_name.text(f"ダボOnデータ")
 
         fig = gauge_view(totalobnumbers,base,df_3patt,df_db_on)
         # Streamlitでゲージチャートの表示
         st.plotly_chart(fig)
         df_db_on
 
-        # プログレスバーとテキストの更新
-        elapsed_time = time.time() - start_time
-        start_time = time.time()
-        progress_text7.text(f"ダボOnデータ Elapsed time: {elapsed_time:.2f} seconds")
+        if(debug_mode):# プログレスバーとテキストの更新
+            elapsed_time = time.time() - start_time
+            start_time = time.time()
+            progress_text7.text(f"ダボOnデータ Elapsed time: {elapsed_time:.2f} seconds")
 
 
     with tabmeter:
@@ -577,17 +646,16 @@ def main():
             st.pyplot(fig3, use_container_width=False)
             st.dataframe(df_temp_bante)
 
-        # プログレスバーとテキストの更新
-        elapsed_time = time.time() - start_time
-        progress_text8.text(f"Teeing 番手 Elapsed time: {elapsed_time:.2f} seconds")
+        if(debug_mode):# プログレスバーとテキストの更新
+            elapsed_time = time.time() - start_time
+            progress_text8.text(f"Teeing 番手 Elapsed time: {elapsed_time:.2f} seconds")
 
 
-
-    # プログレスバーとテキストの更新
-    progress_bar.progress(100)
-    process_name.text(f"完了")
-    elapsed_time = time.time() - ini_start_time
-    progress_text.text(f"Elapsed time: {elapsed_time:.2f} seconds")
+    if(debug_mode):# プログレスバーとテキストの更新
+        progress_bar.progress(100)
+        process_name.text(f"完了")
+        elapsed_time = time.time() - ini_start_time
+        progress_text.text(f"Elapsed time: {elapsed_time:.2f} seconds")
 
 
 

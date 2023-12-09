@@ -354,22 +354,22 @@ def detail_options(df_holef,hole,df_ODB,lastdateOB,OBnumbers,df_count2OB,df_coun
 
 
 def main():
-
-    # カスタムフォーマットとオプションを持つ日付時刻スライダーを作成する
-    start_date = datetime(2023, 1, 1)
-    end_date = start_date + timedelta(weeks=52)
-    
-    selected_date = st.slider(
-        "日付範囲を選択してください",
-        min_value=start_date,
-        max_value=end_date,
-        value=(start_date, end_date),
-        step=timedelta(days=32),
-        format="MM/YY",
-        #options=["日", "週", "月", "年"],
-    )
-    
-    selected_date
+    if st.checkbox("時系列スライダー",value=False):
+        # カスタムフォーマットとオプションを持つ日付時刻スライダーを作成する
+        start_date = datetime(2023, 1, 1)
+        end_date = start_date + timedelta(weeks=52)
+        
+        selected_date = st.slider(
+            "日付範囲を選択してください",
+            min_value=start_date,
+            max_value=end_date,
+            value=(start_date, end_date),
+            step=timedelta(days=32),
+            format="MM/YY",
+            #options=["日", "週", "月", "年"],
+        )
+        
+        selected_date
 
 
     ### Start 基本データフレームの作成
@@ -479,7 +479,7 @@ def main():
             st.metric(label=label,value=df_3patt.shape[0],delta=str(ref_3patt))
 
     # 3  # スコアのヒストグラム表示 
-    with st.expander(f"Score_hist.: :skull: DB以上 {lastdate}"):
+    if st.checkbox(f"Score_hist.: :skull: DB以上 {lastdate}"):
             #グラフ設定 matplotlib
             fig, ax = plt.subplots()
             #ヒストグラム
