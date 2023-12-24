@@ -13,23 +13,20 @@ def green_image(holenum,pfile): #ホールごとのイメージの取り込み
     caption = im[-6:-4]
     return image,caption
 
+
 @st.cache_data 
 def main_dataframe(): # Main Dataframe CSVファイルの読み込み
-    # Index ＝ Dateに。Dateは時間をとりたいがわからない。
     df = pd.read_csv("20231104_HatanoScore.csv")
-    df["Date"]=pd.to_datetime(df["Date"], format="mixed")
+    df["Date"] = pd.to_datetime(df["Date"], format="mixed")
 
-    df["Year"] = df["Date"].apply(lambda x : x.strftime("%y"))
-    df["Month"] = df["Date"].apply(lambda x : x.strftime("%m"))
+    # YearとMonthを抽出
+    for time_unit in ["Year", "Month", "Date"]:
+        df[time_unit] = df["Date"].dt.strftime("%y" if time_unit == "Year" else "%m" if time_unit == "Month" else "%y.%m.%d")
 
-    df["Date"]= df["Date"].dt.strftime("%y.%m.%d")
-    #df = df.set_index("Date")
-    
-    #整数化
+    # 整数化
     columns_to_convert = ["OB", "Penalty", "Total", "1st", "2nd","green","approach","Double Total",
                "3 shot in 100","Total.1","Score.1"]
-    for column in columns_to_convert:
-        df[column] = pd.to_numeric(df[column], errors='coerce').fillna(0).astype(int)
+    df[columns_to_convert] = df[columns_to_convert].apply(pd.to_numeric, errors='coerce').fillna(0).astype(int)
 
     return df
 
@@ -63,8 +60,7 @@ def dataframe_by_hole(df,hole): # ホールごとのデータフレームの作�
     df_hole.rename(columns=rename_dict,inplace=True)
     #整数化
     columns_to_convert = ["PP", "PN", "PH"]
-    for column in columns_to_convert:
-        df_hole[column] = pd.to_numeric(df_hole[column], errors='coerce').fillna(0).astype(int)
+    df_hole[columns_to_convert] = df_hole[columns_to_convert].apply(pd.to_numeric, errors='coerce').fillna(0).astype(int)
 
     return df_hole
 

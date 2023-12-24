@@ -12,7 +12,7 @@ sys.path.append('../')  # 上位フォルダをパスに追加
 import cf  # 上位フォルダにあるモジュールをインポート
 
 def calculate_php(row): #パーオン計算列
-    if row["hole"] in [4, 7, 10, 14]:
+    if row["hole"] in [4, 7, 10, 17]:
         return row["PH"] - 1
     elif row["hole"] in [6, 8, 14, 18]:
         return row["PH"] - 3
@@ -38,7 +38,7 @@ def create_dataframe_from():
     combined_df = combined_df.dropna(subset=["SN"])
     
     combined_df["PHP"] = combined_df.apply(calculate_php, axis=1)
-    #combined_df
+    # combined_df
     return combined_df
 
 def sidebar_display(combined_df):
