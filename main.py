@@ -10,6 +10,19 @@ import matplotlib.image as mpimg
 
 st.set_page_config(layout="wide")
 
+custom_css = """
+    <style>
+        .stMultiSelect .css-1s2u09g-control,
+        .stMultiSelect .css-1s2u09g-control .css-1wa3eu0-placeholder,
+        .stMultiSelect .css-1s2u09g-control .css-1uccc91-singleValue,
+        .stMultiSelect .css-1hb7zxy-IndicatorsContainer,
+        .stMultiSelect .css-1g6gooi {
+            background-color: green !important;
+        }
+    </style>
+"""
+st.markdown(custom_css, unsafe_allow_html=True)
+
 def calculate_metrics(df, column, condition):
     df_filtered = df[df[column].str.contains(condition, case=False, na=False)]
     return df_filtered.shape[0]

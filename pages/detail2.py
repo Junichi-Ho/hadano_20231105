@@ -388,65 +388,66 @@ def main():
     bun_title = f"No.{str(hole)}  :golfer: {df_holef.shape[0]} {iconp} {df_holef[str(hole)].mean():.3f} "
     st.subheader(bun_title)
 
-    meterG, percentageS, numberS = st.tabs([labelCB,":deer: ％",":deer: 数"])
-    with meterG:
-        # Streamlitでゲージチャートの表示
-        if(1): #function enabled/disabled option
-            fig = gauge_view(totalobnumbers,base,df_3patt,df_db_on)
-            st.plotly_chart(fig)
+    if(0):
+        meterG, percentageS, numberS = st.tabs([labelCB,":deer: ％",":deer: 数"])
+        with meterG:
+            # Streamlitでゲージチャートの表示
+            if(1): #function enabled/disabled option
+                fig = gauge_view(totalobnumbers,base,df_3patt,df_db_on)
+                st.plotly_chart(fig)
 
-    with percentageS:
-       #アベレージ表示 （デフォルト）
-        col1,col2,col3=st.columns((1,1,1))
-        with col1:            
-            dbon = (df_db_on.shape[0] - totalobnumbers) /base *100
-            a = totalobnumbers/base*100
-            b = ref_OB/ref_num*100
-            st.metric(label=f"{iconOB} TOB {OBnumbers} : 2OB {df_count2OB.shape[0]}  __ DBon-2OB {dbon:.2f} %",value=f"{a:.1f}",delta=f"{b:.1f}")
-            
-        with col2:
-            a = (df_holef.shape[0]-df_countGon.shape[0]-totalobnumbers)/(base-totalobnumbers)*100
-            b = ref_paron/ref_num*100
-            pattave=df_holef["SN"].mean()
-            st.metric(
-                label=f"{icon_visible_green} NOT GOn _ 1st Patt Ave {pattave:.2f}",
-                value=f"{a:.1f}",delta=f"{b:.1f}")
-            
-        with col3:
-            a = df_3patt.shape[0]/base*100
-            b = ref_3patt/ref_num*100
-            label = f":man-facepalming: :field_hockey_stick_and_ball: :field_hockey_stick_and_ball: :field_hockey_stick_and_ball: :calendar:{lastdate_3}"
-            st.metric(label=label,value=f"{a:.1f}",delta=f"{b:.1f}")
+        with percentageS:
+        #アベレージ表示 （デフォルト）
+            col1,col2,col3=st.columns((1,1,1))
+            with col1:            
+                dbon = (df_db_on.shape[0] - totalobnumbers) /base *100
+                a = totalobnumbers/base*100
+                b = ref_OB/ref_num*100
+                st.metric(label=f"{iconOB} TOB {OBnumbers} : 2OB {df_count2OB.shape[0]}  __ DBon-2OB {dbon:.2f} %",value=f"{a:.1f}",delta=f"{b:.1f}")
+                
+            with col2:
+                a = (df_holef.shape[0]-df_countGon.shape[0]-totalobnumbers)/(base-totalobnumbers)*100
+                b = ref_paron/ref_num*100
+                pattave=df_holef["SN"].mean()
+                st.metric(
+                    label=f"{icon_visible_green} NOT GOn _ 1st Patt Ave {pattave:.2f}",
+                    value=f"{a:.1f}",delta=f"{b:.1f}")
+                
+            with col3:
+                a = df_3patt.shape[0]/base*100
+                b = ref_3patt/ref_num*100
+                label = f":man-facepalming: :field_hockey_stick_and_ball: :field_hockey_stick_and_ball: :field_hockey_stick_and_ball: :calendar:{lastdate_3}"
+                st.metric(label=label,value=f"{a:.1f}",delta=f"{b:.1f}")
 
-    with numberS:
-        #カウント表示
-        col1,col2,col3=st.columns((1,1,1))
-        with col1:
-            dbon = df_db_on.shape[0] - totalobnumbers
-            st.metric(label=f"{iconOB} TOB {OBnumbers} : 2OB {df_count2OB.shape[0]} : DBon-2OB {dbon}",value=totalobnumbers,delta=ref_OB)
-            
-        with col2:
-            pattave=df_holef["SN"].mean()
-            st.metric(
-                label=f"{icon_visible_green} NOT GOn _ 1st Patt Ave {pattave:.2f}",
-                value=df_holef.shape[0]-df_countGon.shape[0],delta=str(ref_paron))
-            
-        with col3:
-            label = f":man-facepalming: :field_hockey_stick_and_ball: :field_hockey_stick_and_ball: :field_hockey_stick_and_ball: :calendar:{lastdate_3}"
-            st.metric(label=label,value=df_3patt.shape[0],delta=str(ref_3patt))
+        with numberS:
+            #カウント表示
+            col1,col2,col3=st.columns((1,1,1))
+            with col1:
+                dbon = df_db_on.shape[0] - totalobnumbers
+                st.metric(label=f"{iconOB} TOB {OBnumbers} : 2OB {df_count2OB.shape[0]} : DBon-2OB {dbon}",value=totalobnumbers,delta=ref_OB)
+                
+            with col2:
+                pattave=df_holef["SN"].mean()
+                st.metric(
+                    label=f"{icon_visible_green} NOT GOn _ 1st Patt Ave {pattave:.2f}",
+                    value=df_holef.shape[0]-df_countGon.shape[0],delta=str(ref_paron))
+                
+            with col3:
+                label = f":man-facepalming: :field_hockey_stick_and_ball: :field_hockey_stick_and_ball: :field_hockey_stick_and_ball: :calendar:{lastdate_3}"
+                st.metric(label=label,value=df_3patt.shape[0],delta=str(ref_3patt))
 
 
     # 3  # スコアのヒストグラム表示 
-    if st.checkbox(f"Score_hist.: :skull: DB以上 {lastdate}"):
-            #グラフ設定 matplotlib
-            fig, ax = plt.subplots(figsize=(6, 4))
-            #ヒストグラム
-            ax.hist(df_holef[str(hole)],bins=10,)
-            st.pyplot(fig, use_container_width=True)
+    ## if st.checkbox(f"Score_hist.: :skull: DB以上 {lastdate}"):
+    ##        #グラフ設定 matplotlib
+    ##        fig, ax = plt.subplots(figsize=(6, 4))
+    ##        #ヒストグラム
+    ##        ax.hist(df_holef[str(hole)],bins=10,)
+    ##        st.pyplot(fig, use_container_width=True)
 
     # 4 # データフレーム表示
-    with st.expander(f"Dataframe:ラウンド数は {str(df_holef.shape[0])} 回"):
-            show_dataframe(hole,df_holef,df_countGon)
+    ## with st.expander(f"Dataframe:ラウンド数は {str(df_holef.shape[0])} 回"):
+    ##        show_dataframe(hole,df_holef,df_countGon)
 
 
     if(debug_mode):
