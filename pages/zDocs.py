@@ -49,7 +49,8 @@ def create_dataframe_from():
     combined_df["PHP"] = combined_df.apply(calculate_php, axis=1)
     return combined_df
 
-def main():
+
+def lottie_display():
     lottie_coding = load_lottiefile(r"lottiefiles\golf.json")
     lottie_cry = load_lottieurl("https://app.lottiefiles.com/animation/472708c7-f54b-4667-8f64-24f539709645")
 
@@ -75,6 +76,8 @@ def main():
         st.write("")
         #st_lottie(lottie_cry,key="cry")
 
+
+def main():
     #各ホール縦持ちデータの取得
     combined_df = create_dataframe_from()
 
