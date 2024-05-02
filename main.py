@@ -10,27 +10,17 @@ import matplotlib.image as mpimg
 
 st.set_page_config(layout="wide")
 
-custom_css = """
-    <style>
-        .stMultiSelect .css-1s2u09g-control,
-        .stMultiSelect .css-1s2u09g-control .css-1wa3eu0-placeholder,
-        .stMultiSelect .css-1s2u09g-control .css-1uccc91-singleValue,
-        .stMultiSelect .css-1hb7zxy-IndicatorsContainer,
-        .stMultiSelect .css-1g6gooi {
-            background-color: green !important;
-        }
-    </style>
-"""
-st.markdown(custom_css, unsafe_allow_html=True)
-
+@st.cache_data
 def calculate_metrics(df, column, condition):
     df_filtered = df[df[column].str.contains(condition, case=False, na=False)]
     return df_filtered.shape[0]
 
+@st.cache_data
 def calculate_metrics_numeric(df, column, value):
     df_filtered = df[df[column] > value]
     return df_filtered.shape[0]
 
+@st.cache_data
 def filter_dataframe(df, column, condition):
     return df[df[column].str.contains(condition, case=False, na=False)]
 
@@ -86,8 +76,6 @@ def generate_sub_dataframe_HP(hole, df_holef):# Holeの位置高さと3pattの�
     lastdate_3 = "なし" if df_temp_hole.empty else df_temp_hole.iat[0,12]
 
     return icon_visible_green, df_temp_hole, lastdate_3
-
-
 
 def get_filtered_dataframe(df_holef, countGon, hole):
     df_to_show = df_holef
@@ -183,18 +171,13 @@ def selection_in_sidebar(df_h):
     # 年と月でフィルタリングするオプション
     for time_unit in ["y", "m"]:
         unit_list = list(df_h[time_unit].unique())
-        default_list = ["23", "22"] if time_unit == "y" else unit_list
+        default_list = ["23","22","21"] if time_unit == "y" else unit_list
         selected_units = st.sidebar.multiselect(f"{time_unit}でFilterling", unit_list, default=default_list)
         df_h = df_h[df_h[time_unit].isin(selected_units)]
 
     return df_h
 
 def main():
-    ### Start 基本データフレームの作成
-    ######################
-    #df_h = ホールにフィルター
-    #df_holef = 年 月 PinPosition で Filterしたもの 
-    ######################
     df = cf.main_dataframe()             #csvからデータフレームに取り込み
     hole = hole_selection()              #選択するホール番号
     df_h = cf.dataframe_by_hole(df,hole) #holeに関する情報にスライスし、データフレーム作成する。
@@ -293,8 +276,6 @@ def main():
     # 4 # データフレーム表示
     with st.expander(f"Dataframe:ラウンド数は {str(df_holef.shape[0])} 回"):
         show_dataframe(hole,df_holef,df_countGon)
-
-
 
 
 if __name__ == "__main__":
